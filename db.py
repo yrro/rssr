@@ -92,8 +92,6 @@ class Feed (object):
             self.title = MaybeHTML.None_
 
         self.link = parsed['feed'].get ('link')
-        self.http_modified = parsed.get ('modified')
-        self.http_etag = parsed.get ('etag')
         self.refreshed = datetime.utcnow ()
 
         if parsed['feed'].has_key ('updated_parsed'):
