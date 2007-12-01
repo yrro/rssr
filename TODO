@@ -1,0 +1,9 @@
+full text indexing (postgresql 8.3)
+
+handle html/xml
+
+tags
+
+web server (twisted, or separate process?)
+
+detect updated entries & mark them unread

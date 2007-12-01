@@ -51,7 +51,6 @@ entries_table = Table ('entries', metadata,
     Column ('author', Unicode),
     Column ('read', Boolean, nullable = False), # TODO: replace with a datetime?
     Column ('inserted', DateTime, nullable = False),
-    # TODO: tags
     schema = 'rssr')
 
 # tags
