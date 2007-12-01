@@ -1,0 +1,35 @@
+import cgi
+import htmlentitydefs
+import re
+import subprocess
+
+_char_ent_ref = re.compile ('&([A-Za-z0-9]+);')
+_h_num_char_ref = re.compile ('&#x([0-9A-Fa-f]+);')
+_d_num_char_ref = re.compile ('&#([0-9]+);')
+
+def _char_ent_ref_sub (match):
+    r = match.group (1)
+    try:
+        return '&#%s;' % (htmlentitydefs.name2codepoint[r])
+    except KeyError:
+        return '&%s;' % (r)
+
+def decode_entities (data, html = False):
+    if html:
+        data = _char_ent_ref.sub (_char_ent_ref_sub, data)
+    data = _h_num_char_ref.sub (lambda match: unichr (int (match.group (1), 16)), data)
+    data = _d_num_char_ref.sub (lambda match: unichr (int (match.group (1))), data)
+
+    return data
+
+def render_html_to_plaintext (html):
+    '''Turn some HTML into plain text. Returns a unicode object.'''
+    p = subprocess.Popen (['w3m', '-dump', '-T', 'text/html'],
+        stdin = subprocess.PIPE,
+        stdout = subprocess.PIPE)
+    output = p.communicate (html.encode ('utf-8'))[0]
+    if p.returncode != 0:
+        raise Exception ('w3m failed (status %i)' % (p.returncode))
+    return output.decode ('utf-8')
+
+# vim: softtabstop=4 expandtab
