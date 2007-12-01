@@ -194,3 +194,5 @@ mapper (Entry, entries_table,
 
 if __name__ == '__main__':
     metadata.create_all (bind = engine)
+
+# vim: softtabstop=4 expandtab
