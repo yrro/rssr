@@ -50,7 +50,7 @@ class Feed (object):
         self.href = href
     
     def __repr__ (self):
-        return '<Feed %s "%s">' % (self.id, self.get_title ())
+        return '<Feed "%s">' % (self.get_title ().encode ('unicode_escape'))
     
     def __unicode__ (self):
         return self.get_title ()
@@ -87,7 +87,8 @@ class Feed (object):
 class Entry (object):
     def update_fields (self, parsed_entry):
         if self.id != None:
-            assert self.id == parsed_entry['id'], 'Tried to set new id "%s" for "%s"' % (parsed_entry['id'], self)
+			if self.id != parsed_entry['id']:
+				raise Exception ('Tried to set new id "%s" for %s' % (parsed_entry['id'].encode ('unicode_escape'), repr (self)))
         else:
             self.id = parsed_entry['id']
 
@@ -103,7 +104,7 @@ class Entry (object):
             self.content = parsed_entry['content'][0].value
 
     def  __repr__ (self):
-        return '<Entry %s (%s)>' % (self.id, self.feed.id)
+        return '<Entry %s>' % (self.id.encode ('unicode_escape'))
 
     def __unicode__ (self):
         return u'%s (%s)' % (self.get_title (), self.feed.get_title ())
