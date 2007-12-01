@@ -93,11 +93,7 @@ class Feed (object):
 
         self.link = parsed['feed'].get ('link')
         self.refreshed = datetime.utcnow ()
-
-        if parsed['feed'].has_key ('updated_parsed'):
-            self.updated = datetime (*parsed['feed']['updated_parsed'][0:6])
-        else:
-            self.updated = None
+        self.updated = util.struct_time_to_datetime (parsed['feed'].get ('updated_parsed'))
 
 class Entry (object):
     def update_fields (self, parsed_entry):
@@ -117,10 +113,11 @@ class Entry (object):
         else:
             self.summary = MaybeHTML.None_
         
+        self.published = util.struct_time_to_datetime (parsed_entry.get ('published_parsed'))
+        self.updated = util.struct_time_to_datetime (parsed_entry.get ('updated_parsed'))
+        self.created = util.struct_time_to_datetime (parsed_entry.get ('created_parsed'))
+
         self.link = parsed_entry.get ('link')
-        self.published = parsed_entry.get ('published')
-        self.updated = parsed_entry.get ('updated')
-        self.created = parsed_entry.get ('created')
         self.author = parsed_entry.get ('author')
         
         if len (parsed_entry.get ('content', [])) > 0 and parsed_entry['content'][0]['value'] != u'':

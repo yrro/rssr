@@ -1,4 +1,5 @@
 import cgi
+import datetime
 import htmlentitydefs
 import re
 import subprocess
@@ -31,5 +32,11 @@ def render_html_to_plaintext (html):
     if p.returncode != 0:
         raise Exception ('w3m failed (status %i)' % (p.returncode))
     return output.decode ('utf-8')
+
+def struct_time_to_datetime (time):
+    if time == None:
+        return None
+
+    return datetime.datetime (*time[0:6])
 
 # vim: softtabstop=4 expandtab
