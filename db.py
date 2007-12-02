@@ -64,6 +64,7 @@ from sqlalchemy import sql
 class Feed (object):
     def __init__ (self, href):
         self.href = href
+        self.title = MaybeHTML (None, None)
     
     def __repr__ (self):
         return '<Feed "%s">' % (self.get_title ().encode ('unicode_escape'))
