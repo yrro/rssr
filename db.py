@@ -18,6 +18,8 @@ from sqlalchemy import Integer, String, Unicode, DateTime, Boolean
 feeds_table = Table ('feeds', metadata,
     Column ('id', Integer, primary_key = True),
     Column ('href', String, unique = True, nullable = False),
+    Column ('http_etag', String),
+    Column ('http_lastmodified', String),
     Column ('version', Unicode),
     Column ('title_value', Unicode),
     Column ('title_type', String),

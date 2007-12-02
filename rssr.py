@@ -3,14 +3,20 @@
 import datetime
 
 import feedparser
+from twisted.python.util import InsensitiveDict
+import twisted.web.error
 
 import config
 import db
+import webclient
 
-def got_data (data, feed):
+def got_data (data, factory, feed):
     parsed = feedparser.parse (data)
     
     session = db.Session ()
+    rh = InsensitiveDict (dict = factory.response_headers)
+    feed.http_etag = rh.get ('ETag', [None])[0]
+    feed.http_lastmodified = rh.get ('Last-Modified', [None])[0]
     feed.update_fields (parsed)
     session.save_or_update (feed)
 
@@ -46,6 +52,11 @@ def got_data (data, feed):
     session.commit ()
 
 def got_error (failure, feed):
+    if failure.check (twisted.web.error.Error):
+        if failure.value.args[0] == '304':
+            # the feed has not been modified--not an error
+            return
+
     msg = '%s.%s' % (failure.type.__module__, failure.type.__name__)
     em = failure.getErrorMessage ()
     if len (em) > 0:
@@ -63,15 +74,17 @@ def got_error (failure, feed):
     return failure
 
 def refresh_feeds ():
-    from twisted.web.client import getPage
-
     session = db.Session ()
     for feed in session.query (db.Feed):
-        d = getPage (feed.href, timeout = 60, agent = 'rssr')
-            # conditional stuff demo'd at <http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/277099>
+        headers = {}
+        if feed.http_etag != None:
+            headers['If-None-Match'] = feed.http_etag
+        if feed.http_lastmodified != None:
+            headers['If-Modified-Since'] = feed.http_lastmodified
+        factory = webclient.getPage (feed.href, timeout = 60, agent = 'rssr', headers = headers)
         session.expunge (feed)
-        d.addCallback (got_data, feed)
-        d.addErrback (got_error, feed)
+        factory.deferred.addCallback (got_data, factory, feed)
+        factory.deferred.addErrback (got_error, feed)
 
 from twisted.python import log
 
