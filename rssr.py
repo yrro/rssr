@@ -21,7 +21,7 @@ def got_data (data, factory, feed):
     session.save_or_update (feed)
 
     # maps entry ids to parsed entry dicts
-    current_entries_parsed = dict ([(e.id, e) for e in parsed['entries'] if e.get ('id') != None])
+    current_entries_parsed = dict ([(e.guid, e) for e in parsed['entries'] if e.get ('guid') != None])
 
     # remove obsolete entries
     cutoff = datetime.datetime.utcnow () - datetime.timedelta (days = config.article_retention)
@@ -35,7 +35,7 @@ def got_data (data, factory, feed):
     old_entries = feed.entries.filter (db.Entry.guid.in_ (current_entries_parsed.keys ()))
     for oe in old_entries:
         #log.msg ('updating %s' % (oe))
-        oe.update_fields (current_entries_parsed.pop (oe.id))
+        oe.update_fields (current_entries_parsed.pop (oe.guid))
         session.update (oe)
     
     # insert new entries
