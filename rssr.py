@@ -77,10 +77,10 @@ def refresh_feeds ():
     session = db.Session ()
     for feed in session.query (db.Feed):
         headers = {}
-        if feed.http_etag != None:
-            headers['If-None-Match'] = feed.http_etag
-        if feed.http_lastmodified != None:
-            headers['If-Modified-Since'] = feed.http_lastmodified
+        #if feed.http_etag != None:
+        #    headers['If-None-Match'] = feed.http_etag
+        #if feed.http_lastmodified != None:
+        #    headers['If-Modified-Since'] = feed.http_lastmodified
         factory = webclient.getPage (feed.href, timeout = 60, agent = 'rssr', headers = headers)
         session.expunge (feed)
         factory.deferred.addCallback (got_data, factory, feed)
