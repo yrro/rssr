@@ -94,7 +94,7 @@ class Feed (object):
         if parsed['feed'].get ('title_detail'):
             self.title = MaybeHTML (parsed['feed']['title_detail']['value'], parsed['feed']['title_detail']['type'])
         else:
-            self.title = MaybeHTML.None_
+            self.title = MaybeHTML (None, None)
 
         self.link = parsed['feed'].get ('link')
         self.refreshed = datetime.utcnow ()
@@ -111,12 +111,12 @@ class Entry (object):
         if parsed_entry.get ('title_detail'):
             self.title = MaybeHTML (parsed_entry['title_detail']['value'], parsed_entry['title_detail']['type'])
         else:
-            self.title = MaybeHTML.None_
+            self.title = MaybeHTML (None, None)
 
         if parsed_entry.get ('summary_detail'):
             self.summary = MaybeHTML (parsed_entry['summary_detail']['value'], parsed_entry['summary_detail']['type'])
         else:
-            self.summary = MaybeHTML.None_
+            self.summary = MaybeHTML (None, None)
         
         self.published = util.struct_time_to_datetime (parsed_entry.get ('published_parsed'))
         self.updated = util.struct_time_to_datetime (parsed_entry.get ('updated_parsed'))
@@ -128,7 +128,7 @@ class Entry (object):
         if len (parsed_entry.get ('content', [])) > 0 and parsed_entry['content'][0]['value'] != u'':
             self.content = MaybeHTML (parsed_entry['content'][0]['value'], parsed_entry['content'][0]['type'])
         else:
-            self.content = MaybeHTML.None_
+            self.content = MaybeHTML (None, None)
 
     def  __repr__ (self):
         return '<Entry %s>' % (self.guid.encode ('unicode_escape'))
@@ -176,7 +176,6 @@ class MaybeHTML (object):
             return util.decode_entities (self.__data)
         
         raise Exception ('Unknown content type "%s"' % (self.__content_type))
-MaybeHTML.None_ = MaybeHTML (None, None)
 
 from sqlalchemy.orm import mapper, relation, composite
 mapper (Feed, feeds_table,
