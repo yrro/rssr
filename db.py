@@ -12,7 +12,7 @@ Session = sessionmaker (bind = engine, transactional = True, autoflush = True)
 from sqlalchemy import MetaData
 metadata = MetaData ()
 
-from sqlalchemy import Table, Column, ForeignKey, CheckConstraint
+from sqlalchemy import Table, Column, ForeignKey, CheckConstraint, UniqueConstraint
 from sqlalchemy import Integer, String, Unicode, DateTime, Boolean
 
 feeds_table = Table ('feeds', metadata,
@@ -32,8 +32,10 @@ feeds_table = Table ('feeds', metadata,
     schema = 'rssr')
 
 entries_table = Table ('entries', metadata,
-    Column ('id', Unicode, primary_key = True),
-    Column ('feed_id', Integer, ForeignKey ('rssr.feeds.id'), primary_key = True),
+    Column ('id', Integer, primary_key = True),
+    Column ('guid', Unicode),
+    Column ('feed_id', Integer, ForeignKey ('rssr.feeds.id')),
+    UniqueConstraint ('guid', 'feed_id', name = 'unique_guid_feed'),
     Column ('title_value', Unicode),
     Column ('title_type', String),
     CheckConstraint ('title_value IS NULL = title_type IS NULL', name = 'title_has_type'),
@@ -99,11 +101,11 @@ class Feed (object):
 
 class Entry (object):
     def update_fields (self, parsed_entry):
-        if self.id != None:
-            if self.id != parsed_entry['id']:
+        if self.guid != None:
+            if self.guid != parsed_entry['id']:
                 raise Exception ('Tried to set new id "%s" for %s' % (parsed_entry['id'].encode ('unicode_escape'), repr (self)))
         else:
-            self.id = parsed_entry['id']
+            self.guid = parsed_entry['id']
 
         if parsed_entry.get ('title_detail'):
             self.title = MaybeHTML (parsed_entry['title_detail']['value'], parsed_entry['title_detail']['type'])
@@ -128,7 +130,7 @@ class Entry (object):
             self.content = MaybeHTML.None_
 
     def  __repr__ (self):
-        return '<Entry %s>' % (self.id.encode ('unicode_escape'))
+        return '<Entry %s>' % (self.guid.encode ('unicode_escape'))
 
     #def __unicode__ (self):
     #    return u'%s (%s)' % (self.get_title (), self.feed.get_title ())
@@ -140,7 +142,7 @@ class Entry (object):
         t = self.title.as_text ()
         if t != None:
             return t
-        return self.id
+        return self.guid
 
 class MaybeHTML (object):
     def __init__ (self, data, content_type):

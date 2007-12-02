@@ -26,13 +26,13 @@ def got_data (data, factory, feed):
     # remove obsolete entries
     cutoff = datetime.datetime.utcnow () - datetime.timedelta (days = config.article_retention)
     from sqlalchemy.sql import not_
-    obsolete_entries = feed.entries.filter (db.Entry.inserted < cutoff).filter (not_ (db.Entry.id.in_ (current_entries_parsed.keys ())))
+    obsolete_entries = feed.entries.filter (db.Entry.inserted < cutoff).filter (not_ (db.Entry.guid.in_ (current_entries_parsed.keys ())))
     for oe in obsolete_entries:
         log.msg ('deleting %s' % (oe))
         session.delete (oe)
 
     # update old entries
-    old_entries = feed.entries.filter (db.Entry.id.in_ (current_entries_parsed.keys ()))
+    old_entries = feed.entries.filter (db.Entry.guid.in_ (current_entries_parsed.keys ()))
     for oe in old_entries:
         #log.msg ('updating %s' % (oe))
         oe.update_fields (current_entries_parsed.pop (oe.id))
