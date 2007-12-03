@@ -98,11 +98,12 @@ class Feed (object):
 
 class Entry (object):
     def update_fields (self, parsed_entry):
+        new_id = util.feedparser_entry_guid (parsed_entry)
         if self.guid != None:
-            if self.guid != parsed_entry['id']:
-                raise Exception ('Tried to set new id "%s" for %s' % (parsed_entry['id'].encode ('unicode_escape'), repr (self)))
+            if self.guid != new_id:
+                raise Exception ('Tried to set new id "%s" for %s' % (new_id.encode ('unicode_escape'), repr (self)))
         else:
-            self.guid = parsed_entry['id']
+            self.guid = new_id
 
         if parsed_entry.get ('title_detail'):
             self.title = MaybeHTML (parsed_entry['title_detail']['value'], parsed_entry['title_detail']['type'])

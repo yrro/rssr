@@ -7,6 +7,7 @@ from twisted.internet import defer
 
 import config
 import db
+import util
 
 def handle_error (failure, feed):
     msg = '%s.%s' % (failure.type.__module__, failure.type.__name__)
@@ -30,7 +31,7 @@ def save_feed (parsed, feed):
     session.save_or_update (feed)
 
     # maps entry GUIDs to feed's parsed entries
-    current_entries_parsed = dict ([(e.guid, e) for e in parsed['entries'] if e.get ('guid') != None])
+    current_entries_parsed = dict ([(util.feedparser_entry_guid (e), e) for e in parsed['entries'] if util.feedparser_entry_guid (e) != None])
 
     # remove obsolete entries -- those that are NOT still in the feed data, and
     # that are older than a certain age

@@ -2,6 +2,7 @@ import cgi
 import datetime
 import htmlentitydefs
 import re
+import sha
 import subprocess
 
 _char_ent_ref = re.compile ('&([A-Za-z0-9]+);')
@@ -38,5 +39,19 @@ def struct_time_to_datetime (time):
         return None
 
     return datetime.datetime (*time[0:6])
+
+def feedparser_entry_guid (entry_parsed):
+    '''Some feeds lack a sensible guid. We'll just have to use other
+    elements of the feed instead.'''
+    for a in ('id', 'link', 'title'):
+        v = entry_parsed.get (a)
+        if v != None:
+            return v
+
+    v = entry_parsed.get ('description')
+    if v != None:
+        return sha.new (v).hexdigest ()
+
+    return None
 
 # vim: softtabstop=4 expandtab
