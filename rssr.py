@@ -78,9 +78,11 @@ def group_done (*args):
         # Returning a Deferred will cause the callbacks to be
         # added to the last group's Deferred's actions.
         d = defer.succeed (None)
-        for feed, data in downloaded_feeds:
+        while len (downloaded_feeds) > 0:
+            feed, data = downloaded_feeds.pop ()
             d.addCallback (parse_feed, data, feed)
             d.addCallback (save_feed, feed)
+            d.addErrback (handle_error, feed)
         return d
 
 def store_feed (data, feed):
