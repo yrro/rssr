@@ -72,8 +72,10 @@ def app (environ, start_response):
 		return ('internal server error\n',)
 
 if __name__ == '__main__':
-	import wsgiref.simple_server
-	s = wsgiref.simple_server.make_server ('localhost', 8000, app)
+	import wsgiref
+	from wsgiref.simple_server import make_server
+	from wsgiref.validate import validator
+	s = wsgiref.simple_server.make_server ('localhost', 8000, validator (app))
 	try:
 		s.serve_forever ()
 	except KeyboardInterrupt, e:
