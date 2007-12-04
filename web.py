@@ -19,10 +19,15 @@ def root ():
 class Response (object):
 	'''View functions should return an instance of this.
 	
-	`data`: initial data to form the response. Must be an `str`.'''
+	`data`: list of `str`s comprising the response.
+
+	`headers`: mapping of response headers.'''
 	def __init__ (self, data = ''):
+		'''`data`: initial data to form the response; must be an `str`.'''
 		self.status = '200 OK'
-		self.headers = [('content-type', 'text/plain')]
+
+		self.__headers = [('content-type', 'text/plain')]
+		self.headers = wsgiref.headers.Headers (self.__headers)
 
 		self.data = []
 		print >> self, data
@@ -64,7 +69,7 @@ def app (environ, start_response):
 		except Http404, e:
 			r = ResponseNotFound ('not found\n')
 		
-		start_response (r.status, r.headers)
+		start_response (r.status, r._Response__headers)
 		return r.data
 	except Exception, e:
 		traceback.print_exc (file = environ['wsgi.errors'])
