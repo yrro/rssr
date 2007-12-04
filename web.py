@@ -72,5 +72,9 @@ def app (environ, start_response):
 		return ('internal server error\n',)
 
 if __name__ == '__main__':
-	from paste import httpserver
-	httpserver.serve (app, host='localhost', port='8000')
+	import wsgiref.simple_server
+	s = wsgiref.simple_server.make_server ('localhost', 8000, app)
+	try:
+		s.serve_forever ()
+	except KeyboardInterrupt, e:
+		pass
