@@ -19,9 +19,7 @@ def root ():
 class Response (object):
 	'''View functions should return an instance of this.
 	
-	`data`: initial data to form the response. Should be an `str`. If a `unicode`
-	is passed in, an error will be raised if it contains codepoints that cannot
-	be encoded in ISO-8859-1.'''
+	`data`: initial data to form the response. Must be an `str`.'''
 	def __init__ (self, data = ''):
 		self.status = '200 OK'
 		self.headers = [('content-type', 'text/plain')]
@@ -30,8 +28,8 @@ class Response (object):
 		print >> self, data
 
 	def write (self, data):
-		if type (data) == unicode:
-			data = data.encode ('latin_1')
+		if type (data) != str:
+			raise Exception ('Tried to write non-string data to response')
 		self.data.append (data)
 
 class ResponseNotFound (Response):
