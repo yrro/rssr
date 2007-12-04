@@ -58,7 +58,7 @@ def app (environ, start_response):
 			try:
 				view = globals ()[route['controller']]
 			except KeyError:
-				raise Http404 ()
+				raise Exception ('Could not find controller "%s"' % (route['controller']))
 
 			r = view ()
 			if not isinstance (r, Response):
