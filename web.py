@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import cgitb
 import sys
 import traceback
 import urllib
@@ -73,8 +74,16 @@ def app (environ, start_response):
 		return r.data
 	except Exception, e:
 		traceback.print_exc (file = environ['wsgi.errors'])
-		start_response ('500 Internal Server Error', [('content-type', 'text/plain')], sys.exc_info ())
-		return ('internal server error\n',)
+
+		#start_response ('500 Internal Server Error', [('content-type', 'text/plain')], sys.exc_info ())
+		#return ['internal server error\n']
+
+		from cStringIO import StringIO
+		s = StringIO ()
+		cgitb.Hook (file = s).handle ()
+		s.seek (0)
+		start_response ('500 Internal Server Error', [('content-type', 'text/html')], sys.exc_info ())
+		return [s.read ()]
 
 if __name__ == '__main__':
 	import wsgiref
