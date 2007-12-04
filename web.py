@@ -14,16 +14,25 @@ class Http404 (Exception):
 	pass
 
 def root ():
-	return Response (['root'])
+	return Response ('root')
 
 class Response (object):
 	'''View functions should return an instance of this.
 	
-	data: an iterable of str instances.'''
-	def __init__ (self, data):
+	`data`: initial data to form the response. Should be an `str`. If a `unicode`
+	is passed in, an error will be raised if it contains codepoints that cannot
+	be encoded in ISO-8859-1.'''
+	def __init__ (self, data = ''):
 		self.status = '200 OK'
 		self.headers = [('content-type', 'text/plain')]
-		self.data = data
+
+		self.data = []
+		print >> self, data
+
+	def write (self, data):
+		if type (data) == unicode:
+			data = data.encode ('latin_1')
+		self.data.append (data)
 
 class ResponseNotFound (Response):
 	def __init__ (self, *args, **kwargs):
