@@ -8,7 +8,7 @@ import urllib
 import routes
 
 m = routes.Mapper ()
-m.connect ('', controller = 'root', action = 'view', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
 
 class Http404 (Exception):
 	'''Raise an instance of this to return a default 404 error.'''
