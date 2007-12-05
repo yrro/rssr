@@ -154,6 +154,10 @@ class MaybeHTML (object):
         if data == None != content_type == None:
             raise Exception ('data and content_type must both be None or not-None')
 
+        if data == '':
+            data = None
+            content_type = None
+
         self.__data = data
         self.__content_type = content_type
     
