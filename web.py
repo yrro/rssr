@@ -23,7 +23,7 @@ class Response (object):
 	`data`: list of `str`s comprising the response.
 
 	`headers`: mapping of response headers.'''
-	def __init__ (self, data = ''):
+	def __init__ (self, data = None):
 		'''`data`: initial data to form the response; must be an `str`.'''
 		self.status = '200 OK'
 
@@ -31,7 +31,8 @@ class Response (object):
 		self.headers = wsgiref.headers.Headers (self.__headers)
 
 		self.data = []
-		print >> self, data
+		if data != None:
+			print >> self, data
 
 	def write (self, data):
 		if type (data) != str:
