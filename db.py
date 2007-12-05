@@ -182,6 +182,24 @@ class MaybeHTML (object):
             return util.render_html_to_plaintext (self.__data)
         if self.__content_type == 'application/xhtml+xml':
             return util.decode_entities (self.__data)
+
+        raise Exception ('Unknown content type "%s"' % (self.__content_type))
+
+    def as_html (self):
+        '''Returns the content an HTML string.'''
+        if self.__content_type == None:
+            return None
+        if self.__content_type == 'text/plain':
+            import sys
+            print >> sys.stderr, 'Conversion from text/plain to text/html'
+            return '<p>%s</p>' % (self.__data)
+        if self.__content_type == 'text/html':
+            if self.__data.find ('<') == -1:
+                # some things just aren't HTML
+                return '<p>%s</p>' % (self.__data)
+            return self.__data
+        if self.__content_type == 'application/xhtml+xml':
+            return self.__data
         
         raise Exception ('Unknown content type "%s"' % (self.__content_type))
 
