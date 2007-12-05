@@ -6,6 +6,9 @@ import traceback
 import urllib
 
 import routes
+from sqlalchemy import sql
+
+import db
 
 m = routes.Mapper ()
 m.connect ('', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
@@ -15,7 +18,55 @@ class Http404 (Exception):
 	pass
 
 def root ():
-	return Response ('root')
+	import elementtree.ElementTree as et
+	
+	ht = et.Element ('{http://www.w3.org/1999/xhtml}html')
+
+	he = et.Element ('{http://www.w3.org/1999/xhtml}head')
+	ht.append (he)
+
+	t = et.Element ('{http://www.w3.org/1999/xhtml}title')
+	t.text = 'rssr'
+	he.append (t)
+
+	bo = et.Element ('{http://www.w3.org/1999/xhtml}body')
+	ht.append (bo)
+
+	s = db.Session ()
+	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
+	q = s.query (db.Entry).add_column (date_clause).filter_by (read = False).order_by (date_clause)[0:20]
+	for entry, date in q:
+		h1 = et.Element ('{http://www.w3.org/1999/xhtml}h1')
+		h1.text = entry.title.as_text ()
+		bo.append (h1)
+
+		p = et.Element ('{http://www.w3.org/1999/xhtml}p')
+		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.title.as_text (), date)
+		if entry.author != None and entry.author != '':
+			p.text = '%s by %s' % (p.text, entry.author)
+		bo.append (p)
+
+		from cStringIO import StringIO
+		from elementtidy import TidyHTMLTreeBuilder
+
+		#if entry.id == 2606: import pdb; pdb.set_trace ()
+		body = entry.get_body ().as_html ()
+		content_tree = TidyHTMLTreeBuilder.parse (StringIO (body.encode ('utf-8')))
+
+		elems = content_tree.find ('{http://www.w3.org/1999/xhtml}body')
+		if len (elems) == 0:
+			raise Exception ('no elements in entry #%i' % (entry.id))
+		for elem in elems:
+			bo.append (elem)
+
+	r = Response ()
+	r.headers['content-type'] = 'application/xhtml+xml'
+	print >> r, '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
+	
+	t = et.ElementTree (ht)
+	t.write (r, 'utf-8')
+
+	return r
 
 class Response (object):
 	'''View functions should return an instance of this.
