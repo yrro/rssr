@@ -19,7 +19,7 @@ def handle_error (failure, feed):
 
     session = db.Session ()
     feed = session.query (db.Feed).get (feed.id) # feed may still be owned by got_data's session
-    feed.error = msg
+    feed.error = failure.getErrorMessage ()
     session.update (feed)
     session.commit ()
 
