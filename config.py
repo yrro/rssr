@@ -1,6 +1,6 @@
 db_engine = 'postgres://:5433/rssr'
 
-refresh_interval = 60 # seconds
+refresh_interval = 60 * 60 # seconds
 
 feed_fetch_timeout = 60 # seconds
 
