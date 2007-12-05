@@ -166,7 +166,7 @@ class MaybeHTML (object):
 
     def __eq__ (self, other):
         if other == None:
-            return False
+            return self.__content_type == None
         return self.__data == other.__data and self.__content_type == other.__content_type
 
     def __ne__ (self, other):
