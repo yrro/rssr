@@ -142,6 +142,13 @@ class Entry (object):
             return t
         return self.guid
 
+    def get_body (self):
+        if self.content != None:
+            return self.content
+        if self.summary != None:
+            return self.summary
+        return MaybeHTML ('<em>no content</em>', 'text/html')
+
 class MaybeHTML (object):
     def __init__ (self, data, content_type):
         if data == None != content_type == None:
