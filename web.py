@@ -48,7 +48,7 @@ def app (environ, start_response):
 	'''A WSGI application.'''
 	try:
 		# The requested path. routes expects a utf-8 encoded str object.
-		path_info = urllib.unquote (environ['PATH_INFO'])
+		url = urllib.unquote (environ['PATH_INFO'][len (environ['SCRIPT_NAME']):])
 		
 		rconfig = routes.request_config ()
 		rconfig.mapper = m # why?
@@ -56,7 +56,7 @@ def app (environ, start_response):
 		rconfig.environ = environ # means we dont' have to set the other properties
 
 		try:
-			route = m.match (path_info)
+			route = m.match (url)
 			if route == None:
 				raise Http404 ()
 
