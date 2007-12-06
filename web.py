@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import cgi
 import cgitb
 import sys
 import traceback
