@@ -126,6 +126,7 @@ class ResponseRedirect (Response):
 def app (environ, start_response):
 	'''A WSGI application.'''
 	try:
+		request = Request (environ)
 		# The requested path. routes expects a utf-8 encoded str object.
 		url = urllib.unquote (environ['PATH_INFO'][len (environ['SCRIPT_NAME']):])
 		
@@ -144,7 +145,7 @@ def app (environ, start_response):
 			except KeyError:
 				raise Exception ('Could not find controller "%s"' % (route['controller']))
 
-			r = view ()
+			r = view (request)
 			if not isinstance (r, Response):
 				raise Exception ('Expected Response, got %s' % (type (r)))
 		except Http404, e:
