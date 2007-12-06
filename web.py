@@ -55,6 +55,11 @@ def root (request):
 	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
 	q = s.query (db.Entry).add_column (date_clause).filter_by (read = False).order_by (date_clause)[0:20]
 	for entry, date in q:
+		div = et.Element ('{http://www.w3.org/1999/xhtml}div')
+		div.set ('class', 'entry')
+		div.set ('style', 'border-left: 1px solid #ccc; padding-left: 0.5em;')
+		bo.append (div)
+
 		h1 = et.Element ('{http://www.w3.org/1999/xhtml}h1')
 		if entry.link != None:
 			h1a = et.Element ('{http://www.w3.org/1999/xhtml}a')
@@ -63,13 +68,13 @@ def root (request):
 			h1.append (h1a)
 		else:
 			h1.text = entry.get_title ()
-		bo.append (h1)
+		div.append (h1)
 
 		p = et.Element ('{http://www.w3.org/1999/xhtml}p')
 		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.title.as_text (), date.replace (tzinfo = pytz.utc).astimezone (pytz.timezone ('Europe/London')))
 		if entry.author != None and entry.author != '':
 			p.text = '%s by %s' % (p.text, entry.author)
-		bo.append (p)
+		div.append (p)
 
 		#if entry.id == 1841: import pdb; pdb.set_trace ()
 		#if entry.id == 3209: import pdb; pdb.set_trace ()
@@ -87,7 +92,7 @@ def root (request):
 		# handle the body element's first text node
 		di = et.Element ('{http://www.w3.org/1999/xhtml}div')
 		di.text = elems.text
-		bo.append (di)
+		div.append (di)
 
 		# subsequent text nodes are considered a part of the contained elements
 		for elem in elems:
