@@ -7,3 +7,10 @@ web server (twisted, or separate process?)
 detect updated entries & mark them unread
 
 web: routes: spit out method not allowed
+
+determine local time from TZ and then /etc/localtime
+
+if an entry has no title, use the start of the content
+
+relative URLs -- pass base to feadparser somehow?
+manifests in the first post to 'revealing errors' and also post #2875
