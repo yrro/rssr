@@ -55,7 +55,13 @@ def root (request):
 	q = s.query (db.Entry).add_column (date_clause).filter_by (read = False).order_by (date_clause)[0:20]
 	for entry, date in q:
 		h1 = et.Element ('{http://www.w3.org/1999/xhtml}h1')
-		h1.text = entry.title.as_text ()
+		if entry.link != None:
+			h1a = et.Element ('{http://www.w3.org/1999/xhtml}a')
+			h1a.set ('href', entry.link)
+			h1a.text = entry.get_title ()
+			h1.append (h1a)
+		else:
+			h1.text = entry.get_title ()
 		bo.append (h1)
 
 		p = et.Element ('{http://www.w3.org/1999/xhtml}p')
@@ -64,18 +70,46 @@ def root (request):
 			p.text = '%s by %s' % (p.text, entry.author)
 		bo.append (p)
 
-		from cStringIO import StringIO
-		from elementtidy import TidyHTMLTreeBuilder
-
-		#if entry.id == 2606: import pdb; pdb.set_trace ()
+		#if entry.id == 1841: import pdb; pdb.set_trace ()
+		#if entry.id == 3209: import pdb; pdb.set_trace ()
 		body = entry.get_body ().as_html ()
-		content_tree = TidyHTMLTreeBuilder.parse (StringIO (body.encode ('utf-8')))
+		def parse_unicode (document):
+			from cStringIO import StringIO
+			from elementtidy import TidyHTMLTreeBuilder
+			return et.parse (StringIO (body.encode ('utf-8')), TidyHTMLTreeBuilder.TreeBuilder (encoding = 'utf-8'))
+		content_tree = parse_unicode (body)
 
 		elems = content_tree.find ('{http://www.w3.org/1999/xhtml}body')
-		if len (elems) == 0:
+		if elems.text == None and len (elems) == 0:
 			raise Exception ('no elements in entry #%i' % (entry.id))
+
+		# handle the body element's first text node
+		di = et.Element ('{http://www.w3.org/1999/xhtml}div')
+		di.text = elems.text
+		bo.append (di)
+
+		# subsequent text nodes are considered a part of the contained elements
 		for elem in elems:
-			bo.append (elem)
+			di.append (elem)
+	
+	bo.append (et.Element ('{http://www.w3.org/1999/xhtml}hr'))
+
+	fo = et.Element ('{http://www.w3.org/1999/xhtml}form')
+	fo.set ('method', 'POST')
+	fo.set ('action', routes.util.url_for (controller = 'mark_read'))
+	bo.append (fo)
+
+	for e, d in q:
+		ids = et.Element ('{http://www.w3.org/1999/xhtml}input')
+		ids.set ('name', 'ids')
+		ids.set ('type', 'hidden')
+		ids.set ('value', str (e.id))
+		fo.append (ids)
+
+	sb = et.Element ('{http://www.w3.org/1999/xhtml}button')
+	sb.set ('type', 'submit')
+	sb.text = 'Mark all read'
+	fo.append (sb)
 
 	r = Response ()
 	r.headers['content-type'] = 'application/xhtml+xml'
