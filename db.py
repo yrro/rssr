@@ -151,7 +151,7 @@ class Entry (object):
             return self.content
         if self.summary != None:
             return self.summary
-        return MaybeHTML ('<em>no content</em>', 'text/html')
+        return MaybeHTML ('<em>(no content)</em>', 'text/html')
 
 class MaybeHTML (object):
     def __init__ (self, data, content_type):
