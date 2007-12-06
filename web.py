@@ -7,6 +7,7 @@ import traceback
 import urllib
 import urlparse
 
+import pytz
 import routes
 from sqlalchemy import sql
 
@@ -65,7 +66,7 @@ def root (request):
 		bo.append (h1)
 
 		p = et.Element ('{http://www.w3.org/1999/xhtml}p')
-		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.title.as_text (), date)
+		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.title.as_text (), date.replace (tzinfo = pytz.utc).astimezone (pytz.timezone ('Europe/London')))
 		if entry.author != None and entry.author != '':
 			p.text = '%s by %s' % (p.text, entry.author)
 		bo.append (p)
