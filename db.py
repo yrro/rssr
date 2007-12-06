@@ -185,6 +185,8 @@ class MaybeHTML (object):
         if self.__content_type == 'text/html':
             return util.render_html_to_plaintext (self.__data)
         if self.__content_type == 'application/xhtml+xml':
+            import sys
+            print >> sys.stderr, 'Conversion from application/xhtml+xml to text/html'
             return util.decode_entities (self.__data)
 
         raise Exception ('Unknown content type "%s"' % (self.__content_type))
