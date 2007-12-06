@@ -5,6 +5,7 @@ import cgitb
 import sys
 import traceback
 import urllib
+import urlparse
 
 import routes
 from sqlalchemy import sql
@@ -68,6 +69,23 @@ def root ():
 	t.write (r, 'utf-8')
 
 	return r
+
+def get_absolute_url (request, path):
+	scheme = request.environ['wsgi.url_scheme']
+	
+	if request.environ.get ('HTTP_HOST'):
+		host = request.environ['HTTP_HOST']
+	else:
+		host = request.environ['SERVER_NAME']
+		if (scheme == 'http' and request.environ['SERVER_PORT'] != 80) or (scheme == 'https' and request.environ['SERVER_PORT'] != 443):
+			host = '%s:%s' % (host, request.environ['SERVER_PORT'])
+
+	return urlparse.urljoin (urlparse.urlunsplit ((scheme, host, '', '', '')), path)
+
+
+class Request (object):
+	def __init__ (self, environ):
+		self.environ = environ
 
 class Response (object):
 	'''View functions should return an instance of this.
