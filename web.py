@@ -38,6 +38,9 @@ def mark_read (request):
 
 def root (request):
 	import elementtree.ElementTree as et
+
+	# TODO: TZ environment variable (if feasable)
+	tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
 	
 	ht = et.Element ('{http://www.w3.org/1999/xhtml}html')
 
@@ -71,7 +74,7 @@ def root (request):
 		div.append (h1)
 
 		p = et.Element ('{http://www.w3.org/1999/xhtml}p')
-		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.title.as_text (), date.replace (tzinfo = pytz.utc).astimezone (pytz.timezone ('Europe/London')))
+		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.title.as_text (), date.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)'))
 		if entry.author != None and entry.author != '':
 			p.text = '%s by %s' % (p.text, entry.author)
 		div.append (p)

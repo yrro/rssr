@@ -8,8 +8,6 @@ detect updated entries & mark them unread
 
 web: routes: spit out method not allowed
 
-determine local time from TZ and then /etc/localtime
-
 if an entry has no title, use the start of the content
 
 relative URLs -- pass base to feadparser somehow?
