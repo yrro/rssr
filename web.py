@@ -14,12 +14,28 @@ import db
 
 m = routes.Mapper ()
 m.connect ('', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
 
 class Http404 (Exception):
 	'''Raise an instance of this to return a default 404 error.'''
 	pass
 
-def root ():
+def mark_read (request):
+	if request.environ['CONTENT_TYPE'] != 'application/x-www-form-urlencoded':
+		raise Exception ('wrong form data encoding')
+	data = request.environ['wsgi.input'].read (int (request.environ['CONTENT_LENGTH']))
+	e_ids = cgi.parse_qs (data)['ids']
+
+	s = db.Session ()
+	entries = s.query (db.Entry).filter (db.Entry.id.in_ (e_ids))
+	for entry in entries:
+		entry.read = True
+		s.update (entry)
+	s.commit ()
+
+	return ResponseRedirect (get_absolute_url (request, routes.util.url_for (controller = 'root')))
+
+def root (request):
 	import elementtree.ElementTree as et
 	
 	ht = et.Element ('{http://www.w3.org/1999/xhtml}html')
