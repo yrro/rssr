@@ -114,6 +114,15 @@ class ResponseNotFound (Response):
 		super (ResponseNotFound, self).__init__ (*args, **kwargs)
 		self.status = '404 Not Found'
 
+class ResponseRedirect (Response):
+	def __init__ (self, url):
+		super (ResponseRedirect, self).__init__ ()
+		self.status = '302 Found'
+
+		if urlparse.urlsplit (url)[0] == '':
+			raise Exception ('Attempted to redirect to a non-absolute URL')
+		self.headers['location'] = url
+
 def app (environ, start_response):
 	'''A WSGI application.'''
 	try:
