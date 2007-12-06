@@ -5,3 +5,5 @@ tags
 web server (twisted, or separate process?)
 
 detect updated entries & mark them unread
+
+web: routes: spit out method not allowed
