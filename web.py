@@ -14,8 +14,9 @@ from sqlalchemy import sql
 import db
 
 m = routes.Mapper ()
-m.connect ('', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
-m.connect ('mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
+m.connect ('view',          controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('mark_read',     controller = 'mark_read', conditions = {'method': ('POST',)})
 
 class Http404 (Exception):
 	'''Raise an instance of this to return a default 404 error.'''
@@ -36,7 +37,7 @@ def mark_read (request):
 
 	return ResponseRedirect (get_absolute_url (request, routes.util.url_for (controller = 'root')))
 
-def root (request):
+def view_feed (request, feed_id = None):
 	import elementtree.ElementTree as et
 
 	# TODO: TZ environment variable (if feasable)
@@ -56,14 +57,49 @@ def root (request):
 
 	s = db.Session ()
 	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
-	q = s.query (db.Entry).add_column (date_clause).filter_by (read = False).order_by (date_clause)[0:20]
+	#q = s.query (db.Entry).add_column (date_clause).filter_by (read = False).order_by (date_clause)[0:20]
+	q = s.query (db.Entry).add_column (date_clause)
+	if feed_id != None:
+		feed = s.query (db.Feed).get (feed_id)
+		if feed == None:
+			raise Http404 ()
+		q = q.filter_by (feed = feed)
+	if request.qs.get ('show_all', ['no']) == ['no']:
+		q = q.filter_by (read = False)
+	q = q.order_by (date_clause)[0:20]
+
+	h1 = et.Element ('{http://www.w3.org/1999/xhtml}h1')
+	if feed_id != None:
+		h1.text = feed.title.as_text ()
+	else:
+		h1.text = 'all feeds'
+	bo.append (h1)
+
+	form = et.Element ('{http://www.w3.org/1999/xhtml}form')
+	form.set ('method', 'GET')
+	#form.set ('action', '.')
+	p = et.Element ('{http://www.w3.org/1999/xhtml}p')
+	b = et.Element ('{http://www.w3.org/1999/xhtml}button')
+	b.set ('name', 'show_all')
+	if request.qs.get ('show_all', ['no']) == ['no']:
+		p.text = 'showing unread entries'
+		b.text = 'show all'
+		b.set ('value', 'yes')
+	else:
+		p.text = 'showing all entries'
+		b.text = 'show unread'
+		b.set ('value', 'no')
+	p.append (b)
+	form.append (p)
+	bo.append (form)
+
 	for entry, date in q:
 		div = et.Element ('{http://www.w3.org/1999/xhtml}div')
 		div.set ('class', 'entry')
 		div.set ('style', 'border-left: 1px solid #ccc; padding-left: 0.5em;')
 		bo.append (div)
 
-		h1 = et.Element ('{http://www.w3.org/1999/xhtml}h1')
+		h1 = et.Element ('{http://www.w3.org/1999/xhtml}h2')
 		if entry.link != None:
 			h1a = et.Element ('{http://www.w3.org/1999/xhtml}a')
 			h1a.set ('href', entry.link)
@@ -145,6 +181,7 @@ def get_absolute_url (request, path):
 class Request (object):
 	def __init__ (self, environ):
 		self.environ = environ
+		self.qs = cgi.parse_qs (self.environ.get ('QUERY_STRING', ''))
 
 class Response (object):
 	'''View functions should return an instance of this.
@@ -200,11 +237,12 @@ def app (environ, start_response):
 				raise Http404 ()
 
 			try:
-				view = globals ()[route['controller']]
+				view = globals ()[route.pop ('controller')]
 			except KeyError:
 				raise Exception ('Could not find controller "%s"' % (route['controller']))
 
-			r = view (request)
+			route.pop ('action') # we don't use this
+			r = view (request, **route)
 			if not isinstance (r, Response):
 				raise Exception ('Expected Response, got %s' % (type (r)))
 		except Http404, e:
