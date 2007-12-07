@@ -199,7 +199,8 @@ class MaybeHTML (object):
         if self.__content_type == 'text/plain':
             import sys
             print >> sys.stderr, 'Conversion from text/plain to text/html'
-            return '<p>%s</p>' % (cgi.escape (self.__data))
+            #return '<p>%s</p>' % (cgi.escape (self.__data))
+            return cgi.escape (self.__data).replace ('\n', '<br>')
         if self.__content_type == 'text/html':
             if self.__data.find ('<') == -1:
                 # some things just aren't HTML
