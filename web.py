@@ -25,7 +25,7 @@ def mark_read (request):
 	if request.environ['CONTENT_TYPE'] != 'application/x-www-form-urlencoded':
 		raise Exception ('wrong form data encoding')
 	data = request.environ['wsgi.input'].read (int (request.environ['CONTENT_LENGTH']))
-	e_ids = cgi.parse_qs (data)['ids']
+	e_ids = cgi.parse_qs (data).get ('ids', ())
 
 	s = db.Session ()
 	entries = s.query (db.Entry).filter (db.Entry.id.in_ (e_ids))
