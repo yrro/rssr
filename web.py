@@ -229,7 +229,7 @@ def app (environ, start_response):
 		rconfig = routes.request_config ()
 		rconfig.mapper = m # why?
 		#rconfig.redirect = ?
-		rconfig.environ = environ # means we dont' have to set the other properties
+		rconfig.environ = environ # means we don't have to set the other properties
 
 		try:
 			route = m.match (url)
