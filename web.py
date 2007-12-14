@@ -8,8 +8,9 @@ import urllib
 import urlparse
 
 import pytz
-import routes
+import routes, routes.middleware
 from sqlalchemy import sql
+from wsgiref.headers import Headers
 
 import db
 
@@ -194,7 +195,7 @@ class Response (object):
 		self.status = '200 OK'
 
 		self.__headers = [('content-type', 'text/plain')]
-		self.headers = wsgiref.headers.Headers (self.__headers)
+		self.headers = Headers (self.__headers)
 
 		self.data = []
 		if data != None:
@@ -223,26 +224,18 @@ def app (environ, start_response):
 	'''A WSGI application.'''
 	try:
 		request = Request (environ)
-		# The requested path. routes expects a utf-8 encoded str object.
-		url = urllib.unquote (environ['PATH_INFO'][len (environ['SCRIPT_NAME']):])
-		
-		rconfig = routes.request_config ()
-		rconfig.mapper = m # why?
-		#rconfig.redirect = ?
-		rconfig.environ = environ # means we don't have to set the other properties
 
+		routing_args = environ['wsgiorg.routing_args'][1]
 		try:
-			route = m.match (url)
-			if route == None:
+			if not 'controller' in routing_args:
 				raise Http404 ()
-
 			try:
-				view = globals ()[route.pop ('controller')]
+				view = globals ()[routing_args.pop ('controller')]
 			except KeyError:
 				raise Exception ('Could not find controller "%s"' % (route['controller']))
 
-			route.pop ('action') # we don't use this
-			r = view (request, **route)
+			routing_args.pop ('action') # we don't use this
+			r = view (request, **routing_args)
 			if not isinstance (r, Response):
 				raise Exception ('Expected Response, got %s' % (type (r)))
 		except Http404, e:
@@ -264,10 +257,14 @@ def app (environ, start_response):
 		return [s.read ()]
 
 if __name__ == '__main__':
-	import wsgiref
-	from wsgiref.simple_server import make_server
 	from wsgiref.validate import validator
-	s = wsgiref.simple_server.make_server ('localhost', 8000, validator (app))
+	app = validator (app)
+
+	from routes.middleware import RoutesMiddleware
+	app = RoutesMiddleware (app, m)
+
+	from wsgiref.simple_server import make_server
+	s = make_server ('localhost', 8000, app)
 	try:
 		s.serve_forever ()
 	except KeyboardInterrupt, e:
