@@ -222,41 +222,50 @@ class ResponseRedirect (Response):
 
 def app (environ, start_response):
 	'''A WSGI application.'''
+	request = Request (environ)
+
+	routing_args = environ['wsgiorg.routing_args'][1]
 	try:
-		request = Request (environ)
-
-		routing_args = environ['wsgiorg.routing_args'][1]
+		if not 'controller' in routing_args:
+			raise Http404 ()
 		try:
-			if not 'controller' in routing_args:
-				raise Http404 ()
-			try:
-				view = globals ()[routing_args.pop ('controller')]
-			except KeyError:
-				raise Exception ('Could not find controller "%s"' % (route['controller']))
+			view = globals ()[routing_args.pop ('controller')]
+		except KeyError:
+			raise Exception ('Could not find controller "%s"' % (route['controller']))
 
-			routing_args.pop ('action') # we don't use this
-			r = view (request, **routing_args)
-			if not isinstance (r, Response):
-				raise Exception ('Expected Response, got %s' % (type (r)))
-		except Http404, e:
-			r = ResponseNotFound ('not found\n')
-		
-		start_response (r.status, r._Response__headers)
-		return r.data
-	except Exception, e:
-		traceback.print_exc (file = environ['wsgi.errors'])
+		routing_args.pop ('action') # we don't use this
+		r = view (request, **routing_args)
+		if not isinstance (r, Response):
+			raise Exception ('Expected Response, got %s' % (type (r)))
+	except Http404, e:
+		r = ResponseNotFound ('not found\n')
+	
+	start_response (r.status, r._Response__headers)
+	return r.data
 
-		#start_response ('500 Internal Server Error', [('content-type', 'text/plain')], sys.exc_info ())
-		#return ['internal server error\n']
+class cgitb_app:
+	def __init__ (self, app):
+		self.app = app
+	
+	def __call__ (self, environ, start_response):
+		try:
+			return self.app (environ, start_response)
+		except Exception, e:
+			traceback.print_exc (file = environ['wsgi.errors'])
 
-		from cStringIO import StringIO
-		s = StringIO ()
-		cgitb.Hook (file = s).handle ()
-		s.seek (0)
-		start_response ('500 Internal Server Error', [('content-type', 'text/html')], sys.exc_info ())
-		return [s.read ()]
+			import pdb
+			pdb.post_mortem (sys.exc_info ()[2])
+
+			from cStringIO import StringIO
+			s = StringIO ()
+			cgitb.Hook (file = s).handle ()
+			s.seek (0)
+			start_response ('500 Internal Server Error', [('content-type', 'text/html')], sys.exc_info ())
+			return s
 
 if __name__ == '__main__':
+	app = cgitb_app (app)
+
 	from wsgiref.validate import validator
 	app = validator (app)
 
