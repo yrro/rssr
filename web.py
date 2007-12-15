@@ -17,11 +17,18 @@ from wsgiref.headers import Headers
 import db
 
 m = routes.Mapper ()
-m.connect ('view',          controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('view',           controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('view/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
 m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
-m.connect ('mark_read',     controller = 'mark_read', conditions = {'method': ('POST',)})
+m.connect ('view/:feed_id/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
 
-def mark_read (request):
+def url_for_controller (controller, **kwargs):
+	url = routes.util.url_for (controller = controller, **kwargs)
+	if url == None:
+		raise Exception ('No URL found for controller "%s" {%s}' % (controller, kwargs))
+	return url
+
+def mark_read (request, feed_id = None):
 	s = db.Session ()
 	entries = s.query (db.Entry).filter (db.Entry.id.in_ (request.POST.getall ('ids')))
 	for entry in entries:
@@ -29,7 +36,10 @@ def mark_read (request):
 		s.update (entry)
 	s.commit ()
 
-	raise HTTPFound (routes.util.url_for (controller = 'view_feed'))
+	kwargs = {}
+	if feed_id != None:
+		kwargs['feed_id'] = feed_id
+	raise HTTPFound (url_for_controller ('view_feed', **kwargs))
 
 def view_feed (request, feed_id = None):
 	import elementtree.ElementTree as et
@@ -135,7 +145,7 @@ def view_feed (request, feed_id = None):
 
 	fo = et.Element ('{http://www.w3.org/1999/xhtml}form')
 	fo.set ('method', 'POST')
-	fo.set ('action', routes.util.url_for (controller = 'mark_read'))
+	fo.set ('action', url_for_controller ('mark_read')) # how does this work when feed_id != None?
 	bo.append (fo)
 
 	for e, d in q:
