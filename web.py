@@ -7,6 +7,7 @@ import traceback
 import urllib
 import urlparse
 
+from paste.httpexceptions import HTTPNotFound, HTTPFound
 from paste.wsgiwrappers import WSGIRequest
 import pytz
 import routes, routes.middleware
@@ -20,10 +21,6 @@ m.connect ('view',          controller = 'view_feed', conditions = {'method': ('
 m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
 m.connect ('mark_read',     controller = 'mark_read', conditions = {'method': ('POST',)})
 
-class Http404 (Exception):
-	'''Raise an instance of this to return a default 404 error.'''
-	pass
-
 def mark_read (request):
 	s = db.Session ()
 	entries = s.query (db.Entry).filter (db.Entry.id.in_ (request.POST.getall ('ids')))
@@ -32,7 +29,7 @@ def mark_read (request):
 		s.update (entry)
 	s.commit ()
 
-	return ResponseRedirect (get_absolute_url (request, routes.util.url_for (controller = 'root')))
+	raise HTTPFound (routes.util.url_for (controller = 'view_feed'))
 
 def view_feed (request, feed_id = None):
 	import elementtree.ElementTree as et
@@ -59,7 +56,7 @@ def view_feed (request, feed_id = None):
 	if feed_id != None:
 		feed = s.query (db.Feed).get (feed_id)
 		if feed == None:
-			raise Http404 ()
+			raise HTTPNotFound ()
 		q = q.filter_by (feed = feed)
 	if request.GET.get ('show_all', 'no') == 'no':
 		q = q.filter_by (read = False)
@@ -162,9 +159,6 @@ def view_feed (request, feed_id = None):
 
 	return r
 
-def get_absolute_url (request, path):
-	return urlparse.urlunsplit ((request.environ['wsgi.url_scheme'], request.host, path, '', ''))
-
 class Response (object):
 	'''View functions should return an instance of this.
 	
@@ -187,11 +181,6 @@ class Response (object):
 			raise Exception ('Tried to write non-string data to response')
 		self.data.append (data)
 
-class ResponseNotFound (Response):
-	def __init__ (self, *args, **kwargs):
-		super (ResponseNotFound, self).__init__ (*args, **kwargs)
-		self.status = '404 Not Found'
-
 class ResponseRedirect (Response):
 	def __init__ (self, url):
 		super (ResponseRedirect, self).__init__ ()
@@ -202,25 +191,25 @@ class ResponseRedirect (Response):
 		self.headers['location'] = url
 
 def app (environ, start_response):
-	'''A WSGI application.'''
+	'''Route the request to an appropriate view function.'''
 	routing_args = environ['wsgiorg.routing_args'][1]
 	try:
-		if not 'controller' in routing_args:
-			raise Http404 ()
-		try:
-			view = globals ()[routing_args.pop ('controller')]
-		except KeyError:
-			raise Exception ('Could not find controller "%s"' % (route['controller']))
+		controller = routing_args.pop ('controller')
+	except KeyError:
+		raise HTTPNotFound ()
 
-		routing_args.pop ('action') # we don't use this
-		r = view (WSGIRequest (environ), **routing_args)
-		if not isinstance (r, Response):
-			raise Exception ('Expected Response, got %s' % (type (r)))
-	except Http404, e:
-		r = ResponseNotFound ('not found\n')
+	try:
+		view = globals ()[controller]
+	except KeyError:
+		raise Exception ('Could not find controller "%s"' % (route['controller']))
+
+	routing_args.pop ('action') # we don't use this
+	result = view (WSGIRequest (environ), **routing_args)
+	if not isinstance (result, Response):
+		raise Exception ('Expected Response, got %s' % (type (response)))
 	
-	start_response (r.status, r._Response__headers)
-	return r.data
+	start_response (result.status, result._Response__headers)
+	return result.data
 
 class cgitb_app:
 	def __init__ (self, app):
@@ -243,14 +232,31 @@ class cgitb_app:
 			return s
 
 if __name__ == '__main__':
-	app = cgitb_app (app)
-
+	# Ensure that the app acts as a valid WSGI application
 	from wsgiref.validate import validator
 	app = validator (app)
 
+	# Handle Paste HTTP exceptions
+	from paste.httpexceptions import HTTPExceptionHandler
+	app = HTTPExceptionHandler (app)
+
+	# Catch exceptions, render a pretty stack trace to the response
+	#app = cgitb_app (app)
+
+	# Paste's version of the above
+	#from paste.exceptions.errormiddleware import ErrorMiddleware
+	#app = ErrorMiddleware (app, debug = True)
+
+	# Interactive debugger
+	from paste.evalexception.middleware import EvalException
+	app = EvalException (app)
+
+	# Parse URLs, placing an entry in the environment that
+	# lets us work out which view function to call
 	from routes.middleware import RoutesMiddleware
 	app = RoutesMiddleware (app, m)
 
+	# Host the application in an HTTP server
 	from wsgiref.simple_server import make_server
 	s = make_server ('localhost', 8000, app)
 	try:
