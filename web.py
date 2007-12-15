@@ -81,7 +81,6 @@ def view_feed (request, feed_id = None):
 
 	form = et.Element ('{http://www.w3.org/1999/xhtml}form')
 	form.set ('method', 'GET')
-	#form.set ('action', '.')
 	p = et.Element ('{http://www.w3.org/1999/xhtml}p')
 	b = et.Element ('{http://www.w3.org/1999/xhtml}button')
 	b.set ('name', 'show_all')
