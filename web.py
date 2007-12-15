@@ -217,7 +217,7 @@ def app (environ, start_response):
 
 	result = view (WSGIRequest (environ), **routing_args)
 	if not isinstance (result, Response):
-		raise Exception ('Expected Response, got %s' % (type (response)))
+		raise Exception ('Expected Response, got %s' % (type (result)))
 	
 	start_response (result.status, result._Response__headers)
 	return result.data
