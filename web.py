@@ -7,6 +7,7 @@ import traceback
 import urllib
 import urlparse
 
+from paste.wsgiwrappers import WSGIRequest
 import pytz
 import routes, routes.middleware
 from sqlalchemy import sql
@@ -24,13 +25,8 @@ class Http404 (Exception):
 	pass
 
 def mark_read (request):
-	if request.environ['CONTENT_TYPE'] != 'application/x-www-form-urlencoded':
-		raise Exception ('wrong form data encoding')
-	data = request.environ['wsgi.input'].read (int (request.environ['CONTENT_LENGTH']))
-	e_ids = cgi.parse_qs (data).get ('ids', ())
-
 	s = db.Session ()
-	entries = s.query (db.Entry).filter (db.Entry.id.in_ (e_ids))
+	entries = s.query (db.Entry).filter (db.Entry.id.in_ (request.POST.getall ('ids')))
 	for entry in entries:
 		entry.read = True
 		s.update (entry)
@@ -65,7 +61,7 @@ def view_feed (request, feed_id = None):
 		if feed == None:
 			raise Http404 ()
 		q = q.filter_by (feed = feed)
-	if request.qs.get ('show_all', ['no']) == ['no']:
+	if request.GET.get ('show_all', 'no') == 'no':
 		q = q.filter_by (read = False)
 	q = q.order_by (date_clause)[0:20]
 
@@ -82,7 +78,7 @@ def view_feed (request, feed_id = None):
 	p = et.Element ('{http://www.w3.org/1999/xhtml}p')
 	b = et.Element ('{http://www.w3.org/1999/xhtml}button')
 	b.set ('name', 'show_all')
-	if request.qs.get ('show_all', ['no']) == ['no']:
+	if request.GET.get ('show_all', 'no') == 'no':
 		p.text = 'showing unread entries'
 		b.text = 'show all'
 		b.set ('value', 'yes')
@@ -167,22 +163,7 @@ def view_feed (request, feed_id = None):
 	return r
 
 def get_absolute_url (request, path):
-	scheme = request.environ['wsgi.url_scheme']
-	
-	if request.environ.get ('HTTP_HOST'):
-		host = request.environ['HTTP_HOST']
-	else:
-		host = request.environ['SERVER_NAME']
-		if (scheme == 'http' and request.environ['SERVER_PORT'] != 80) or (scheme == 'https' and request.environ['SERVER_PORT'] != 443):
-			host = '%s:%s' % (host, request.environ['SERVER_PORT'])
-
-	return urlparse.urljoin (urlparse.urlunsplit ((scheme, host, '', '', '')), path)
-
-
-class Request (object):
-	def __init__ (self, environ):
-		self.environ = environ
-		self.qs = cgi.parse_qs (self.environ.get ('QUERY_STRING', ''))
+	return urlparse.urlunsplit ((request.environ['wsgi.url_scheme'], request.host, path, '', ''))
 
 class Response (object):
 	'''View functions should return an instance of this.
@@ -222,8 +203,6 @@ class ResponseRedirect (Response):
 
 def app (environ, start_response):
 	'''A WSGI application.'''
-	request = Request (environ)
-
 	routing_args = environ['wsgiorg.routing_args'][1]
 	try:
 		if not 'controller' in routing_args:
@@ -234,7 +213,7 @@ def app (environ, start_response):
 			raise Exception ('Could not find controller "%s"' % (route['controller']))
 
 		routing_args.pop ('action') # we don't use this
-		r = view (request, **routing_args)
+		r = view (WSGIRequest (environ), **routing_args)
 		if not isinstance (r, Response):
 			raise Exception ('Expected Response, got %s' % (type (r)))
 	except Http404, e:
