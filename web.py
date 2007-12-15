@@ -242,8 +242,8 @@ class cgitb_app:
 
 if __name__ == '__main__':
 	# Ensure that the app acts as a valid WSGI application
-	from wsgiref.validate import validator
-	app = validator (app)
+	#from wsgiref.validate import validator
+	#app = validator (app)
 
 	# Handle Paste HTTP exceptions
 	from paste.httpexceptions import HTTPExceptionHandler
