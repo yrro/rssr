@@ -16,7 +16,7 @@ from wsgiref.headers import Headers
 
 import db
 
-m = routes.Mapper ()
+m = routes.Mapper (explicit = True)
 m.connect ('view',           controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
 m.connect ('view/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
 m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
@@ -144,7 +144,10 @@ def view_feed (request, feed_id = None):
 
 	fo = et.Element ('{http://www.w3.org/1999/xhtml}form')
 	fo.set ('method', 'POST')
-	fo.set ('action', url_for_controller ('mark_read')) # how does this work when feed_id != None?
+	kwargs = {}
+	if feed_id != None:
+		kwargs['feed_id'] = feed_id
+	fo.set ('action', url_for_controller ('mark_read', **kwargs))
 	bo.append (fo)
 
 	for e, d in q:
@@ -212,7 +215,6 @@ def app (environ, start_response):
 	except KeyError:
 		raise Exception ('Could not find controller "%s"' % (route['controller']))
 
-	routing_args.pop ('action') # we don't use this
 	result = view (WSGIRequest (environ), **routing_args)
 	if not isinstance (result, Response):
 		raise Exception ('Expected Response, got %s' % (type (response)))
