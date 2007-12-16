@@ -8,6 +8,7 @@ import db
 import web
 
 from xml.dom import XHTML_NAMESPACE
+ET_XHTML_NAMESPACE = '{%s}' % (XHTML_NAMESPACE)
 
 def list_feeds (request):
 	s = db.Session ()
@@ -65,7 +66,8 @@ def view_feed (request, feed_id = None):
 	bo.append (h1)
 
 	form = et.Element ('form')
-	form.set ('method', 'GET')
+	form.set ('action', '.')
+	form.set ('method', 'get')
 	p = et.Element ('p')
 	b = et.Element ('button')
 	b.set ('name', 'show_all')
@@ -110,42 +112,52 @@ def view_feed (request, feed_id = None):
 			from cStringIO import StringIO
 			from elementtidy import TidyHTMLTreeBuilder
 			return et.parse (StringIO (body.encode ('utf-8')), TidyHTMLTreeBuilder.TreeBuilder (encoding = 'utf-8'))
-		content_tree = parse_unicode (body)
+		body_tree = parse_unicode (body)
 
-		elems = content_tree.find ('body')
-		if elems.text == None and len (elems) == 0:
-			raise Exception ('no elements in entry #%i' % (entry.id))
+		elems = body_tree.find (ET_XHTML_NAMESPACE + 'body') # TODO: xpath
+		if elems == None:
+			raise Exception ('no <html:body> element for entry #%i' % (entry.id))
+		elif elems.text == None and len (elems) == 0:
+			raise Exception ('empty <html:body> element for entry #%i' % (entry.id))
 
 		# handle the body element's first text node
 		di = et.Element ('div')
 		di.text = elems.text
 		div.append (di)
-
 		# subsequent text nodes are considered a part of the contained elements
+
+		# strip XHTML namespace from elements
+		for elem in elems.getiterator ():
+			if elem.tag.startswith (ET_XHTML_NAMESPACE):
+				elem.tag = elem.tag[len (ET_XHTML_NAMESPACE):]
+
 		for elem in elems:
 			di.append (elem)
 	
 	bo.append (et.Element ('hr'))
 
 	fo = et.Element ('form')
-	fo.set ('method', 'POST')
+	fo.set ('method', 'post')
 	kwargs = {}
 	if feed_id != None:
 		kwargs['feed_id'] = feed_id
 	fo.set ('action', web.url_for_view ('mark_read', **kwargs))
 	bo.append (fo)
 
+	p = et.Element ('p')
 	for e, d in q:
 		ids = et.Element ('input')
 		ids.set ('name', 'ids')
 		ids.set ('type', 'hidden')
 		ids.set ('value', str (e.id))
-		fo.append (ids)
+		p.append (ids)
 
 	sb = et.Element ('button')
 	sb.set ('type', 'submit')
 	sb.text = 'Mark all read'
-	fo.append (sb)
+	p.append (sb)
+
+	fo.append (p)
 
 	r = WSGIResponse ()
 	r.headers['content-type'] = 'application/xhtml+xml; charset=utf-8'
