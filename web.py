@@ -1,16 +1,15 @@
 #!/usr/bin/python
 
-import cgi
 import cgitb
+import pdb
 import sys
 import traceback
-import urllib
 import urlparse
 
 from paste.httpexceptions import HTTPNotFound, HTTPFound
 from paste.wsgiwrappers import WSGIRequest
 import pytz
-import routes, routes.middleware
+import routes
 from sqlalchemy import sql
 from wsgiref.headers import Headers
 
@@ -232,7 +231,6 @@ class cgitb_app:
 		except Exception, e:
 			traceback.print_exc (file = environ['wsgi.errors'])
 
-			import pdb
 			pdb.post_mortem (sys.exc_info ()[2])
 
 			from cStringIO import StringIO
