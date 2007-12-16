@@ -47,7 +47,6 @@ def view_feed (request, feed_id = None):
 
 	s = db.Session ()
 	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
-	#q = s.query (db.Entry).add_column (date_clause).filter_by (read = False).order_by (date_clause)[0:20]
 	q = s.query (db.Entry).add_column (date_clause)
 	if feed_id != None:
 		feed = s.query (db.Feed).get (feed_id)
