@@ -204,7 +204,7 @@ class MaybeHTML (object):
         if self.__content_type == 'text/html':
             if self.__data.find ('<') == -1:
                 # some things just aren't HTML
-                return '<p>%s</p>' % (self.__data) # TODO: is this really necessary?
+                # TODO: convert plain text to html?
             return self.__data
         if self.__content_type == 'application/xhtml+xml':
             return self.__data
