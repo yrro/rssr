@@ -7,7 +7,7 @@ import traceback
 import urlparse
 
 from paste.httpexceptions import HTTPNotFound, HTTPFound
-from paste.wsgiwrappers import WSGIRequest
+from paste.wsgiwrappers import WSGIRequest, WSGIResponse
 import pytz
 import routes
 from sqlalchemy import sql
@@ -215,11 +215,17 @@ def app (environ, start_response):
 		raise Exception ('Could not find controller "%s"' % (route['controller']))
 
 	result = view (WSGIRequest (environ), **routing_args)
-	if not isinstance (result, Response):
-		raise Exception ('Expected Response, got %s' % (type (result)))
-	
-	start_response (result.status, result._Response__headers)
-	return result.data
+	if isinstance (result, Response):
+		start_response (result.status, result._Response__headers)
+		return result.data
+	elif isinstance (result, WSGIResponse):
+		return result (environ, start_response)
+
+	if type (result) == type:
+		t = result.__class__
+	else:
+		t = type (result)
+	raise Exception ('Expected WSGIResponse or Response, got %s' % (t))
 
 class cgitb_app:
 	def __init__ (self, app):
