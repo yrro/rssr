@@ -205,6 +205,7 @@ class MaybeHTML (object):
             if self.__data.find ('<') == -1:
                 # some things just aren't HTML
                 # TODO: convert plain text to html?
+                pass
             return self.__data
         if self.__content_type == 'application/xhtml+xml':
             return self.__data
