@@ -1,3 +1,4 @@
+import elementtree.ElementTree as et
 from paste.httpexceptions import HTTPNotFound, HTTPFound
 from paste.wsgiwrappers import WSGIResponse
 import pytz
@@ -5,6 +6,8 @@ from sqlalchemy import sql
 
 import db
 import web
+
+from xml.dom import XHTML_NAMESPACE
 
 def list_feeds (request):
 	s = db.Session ()
@@ -26,21 +29,20 @@ def mark_read (request, feed_id = None):
 	raise HTTPFound (web.url_for_view ('view_feed', **kwargs))
 
 def view_feed (request, feed_id = None):
-	import elementtree.ElementTree as et
-
 	# TODO: TZ environment variable (if feasable)
 	tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
 	
-	ht = et.Element ('{http://www.w3.org/1999/xhtml}html')
+	ht = et.Element ('html')
+	ht.set ('xmlns', XHTML_NAMESPACE)
 
-	he = et.Element ('{http://www.w3.org/1999/xhtml}head')
+	he = et.Element ('head')
 	ht.append (he)
 
-	t = et.Element ('{http://www.w3.org/1999/xhtml}title')
+	t = et.Element ('title')
 	t.text = 'rssr'
 	he.append (t)
 
-	bo = et.Element ('{http://www.w3.org/1999/xhtml}body')
+	bo = et.Element ('body')
 	ht.append (bo)
 
 	s = db.Session ()
@@ -56,17 +58,17 @@ def view_feed (request, feed_id = None):
 		q = q.filter_by (read = False)
 	q = q.order_by (date_clause)[0:20]
 
-	h1 = et.Element ('{http://www.w3.org/1999/xhtml}h1')
+	h1 = et.Element ('h1')
 	if feed_id != None:
 		h1.text = feed.title.as_text ()
 	else:
 		h1.text = 'all feeds'
 	bo.append (h1)
 
-	form = et.Element ('{http://www.w3.org/1999/xhtml}form')
+	form = et.Element ('form')
 	form.set ('method', 'GET')
-	p = et.Element ('{http://www.w3.org/1999/xhtml}p')
-	b = et.Element ('{http://www.w3.org/1999/xhtml}button')
+	p = et.Element ('p')
+	b = et.Element ('button')
 	b.set ('name', 'show_all')
 	if request.GET.get ('show_all', 'no') == 'no':
 		p.text = 'showing unread entries'
@@ -81,14 +83,14 @@ def view_feed (request, feed_id = None):
 	bo.append (form)
 
 	for entry, date in q:
-		div = et.Element ('{http://www.w3.org/1999/xhtml}div')
+		div = et.Element ('div')
 		div.set ('class', 'entry')
 		div.set ('style', 'border-left: 1px solid #ccc; padding-left: 0.5em;')
 		bo.append (div)
 
-		h1 = et.Element ('{http://www.w3.org/1999/xhtml}h2')
+		h1 = et.Element ('h2')
 		if entry.link != None:
-			h1a = et.Element ('{http://www.w3.org/1999/xhtml}a')
+			h1a = et.Element ('a')
 			h1a.set ('href', entry.link)
 			h1a.text = entry.get_title ()
 			h1.append (h1a)
@@ -96,7 +98,7 @@ def view_feed (request, feed_id = None):
 			h1.text = entry.get_title ()
 		div.append (h1)
 
-		p = et.Element ('{http://www.w3.org/1999/xhtml}p')
+		p = et.Element ('p')
 		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.get_title (), date.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)'))
 		if entry.author != None and entry.author != '':
 			p.text = '%s by %s' % (p.text, entry.author)
@@ -111,12 +113,12 @@ def view_feed (request, feed_id = None):
 			return et.parse (StringIO (body.encode ('utf-8')), TidyHTMLTreeBuilder.TreeBuilder (encoding = 'utf-8'))
 		content_tree = parse_unicode (body)
 
-		elems = content_tree.find ('{http://www.w3.org/1999/xhtml}body')
+		elems = content_tree.find ('body')
 		if elems.text == None and len (elems) == 0:
 			raise Exception ('no elements in entry #%i' % (entry.id))
 
 		# handle the body element's first text node
-		di = et.Element ('{http://www.w3.org/1999/xhtml}div')
+		di = et.Element ('div')
 		di.text = elems.text
 		div.append (di)
 
@@ -124,9 +126,9 @@ def view_feed (request, feed_id = None):
 		for elem in elems:
 			di.append (elem)
 	
-	bo.append (et.Element ('{http://www.w3.org/1999/xhtml}hr'))
+	bo.append (et.Element ('hr'))
 
-	fo = et.Element ('{http://www.w3.org/1999/xhtml}form')
+	fo = et.Element ('form')
 	fo.set ('method', 'POST')
 	kwargs = {}
 	if feed_id != None:
@@ -135,13 +137,13 @@ def view_feed (request, feed_id = None):
 	bo.append (fo)
 
 	for e, d in q:
-		ids = et.Element ('{http://www.w3.org/1999/xhtml}input')
+		ids = et.Element ('input')
 		ids.set ('name', 'ids')
 		ids.set ('type', 'hidden')
 		ids.set ('value', str (e.id))
 		fo.append (ids)
 
-	sb = et.Element ('{http://www.w3.org/1999/xhtml}button')
+	sb = et.Element ('button')
 	sb.set ('type', 'submit')
 	sb.text = 'Mark all read'
 	fo.append (sb)
