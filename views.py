@@ -148,8 +148,8 @@ def view_feed (request, feed_id = None):
 	sb.text = 'Mark all read'
 	fo.append (sb)
 
-	r = web.Response ()
-	r.headers['content-type'] = 'application/xhtml+xml'
+	r = WSGIResponse ()
+	r.headers['content-type'] = 'application/xhtml+xml; charset=utf-8'
 	print >> r, '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
 	
 	t = et.ElementTree (ht)

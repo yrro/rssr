@@ -9,7 +9,6 @@ import urlparse
 from paste.httpexceptions import HTTPNotFound
 from paste.wsgiwrappers import WSGIRequest, WSGIResponse
 import routes
-from wsgiref.headers import Headers
 
 import db
 import views
@@ -27,28 +26,6 @@ def url_for_view (view_name, **kwargs):
 		raise Exception ('No URL found for controller "%s" {%s}' % (controller, kwargs))
 	return url
 
-class Response (object):
-	'''View functions should return an instance of this.
-	
-	`data`: list of `str`s comprising the response.
-
-	`headers`: mapping of response headers.'''
-	def __init__ (self, data = None):
-		'''`data`: initial data to form the response; must be an `str`.'''
-		self.status = '200 OK'
-
-		self.__headers = [('content-type', 'text/plain')]
-		self.headers = Headers (self.__headers)
-
-		self.data = []
-		if data != None:
-			print >> self, data
-
-	def write (self, data):
-		if type (data) != str:
-			raise Exception ('Tried to write non-string data to response')
-		self.data.append (data)
-
 def app (environ, start_response):
 	'''Route the request to an appropriate view function.'''
 	routing_args = environ['wsgiorg.routing_args'][1]
@@ -63,18 +40,8 @@ def app (environ, start_response):
 		raise Exception ('Could not find view "%s"' % (view_name))
 
 	result = view (WSGIRequest (environ), **routing_args)
-	import web
-	if isinstance (result, web.Response):
-		start_response (result.status, result._Response__headers)
-		return result.data
-	elif isinstance (result, WSGIResponse):
-		return result (environ, start_response)
-
-	if type (result) == type:
-		t = result.__class__
-	else:
-		t = type (result)
-	raise Exception ('Expected WSGIResponse or Response, got %s' % (t))
+	assert (isinstance (result, WSGIResponse))
+	return result (environ, start_response)
 
 class cgitb_app:
 	def __init__ (self, app):
