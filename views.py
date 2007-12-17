@@ -66,7 +66,10 @@ def view_feed (request, feed_id = None):
 	bo.append (h1)
 
 	form = et.Element ('form')
-	form.set ('action', '.')
+	kwargs = {}
+	if feed_id != None:
+		kwargs['feed_id'] = feed_id
+	form.set ('action', web.url_for_view ('view_feed', **kwargs))
 	form.set ('method', 'get')
 	p = et.Element ('p')
 	b = et.Element ('button')
