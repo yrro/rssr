@@ -33,18 +33,14 @@ def view_feed (request, feed_id = None):
 	# TODO: TZ environment variable (if feasable)
 	tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
 	
-	ht = et.Element ('html')
-	ht.set ('xmlns', XHTML_NAMESPACE)
+	ht = et.Element ('html', xmlns = XHTML_NAMESPACE)
 
-	he = et.Element ('head')
-	ht.append (he)
+	he = et.SubElement (ht, 'head')
 
-	t = et.Element ('title')
+	t = et.SubElement (he, 'title')
 	t.text = 'rssr'
-	he.append (t)
 
-	bo = et.Element ('body')
-	ht.append (bo)
+	bo = et.SubElement (ht, 'body')
 
 	s = db.Session ()
 	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
@@ -58,55 +54,45 @@ def view_feed (request, feed_id = None):
 		q = q.filter_by (read = False)
 	q = q.order_by (date_clause)[0:20]
 
-	h1 = et.Element ('h1')
+	h1 = et.SubElement (bo, 'h1')
 	if feed_id != None:
 		h1.text = feed.title.as_text ()
 	else:
 		h1.text = 'all feeds'
-	bo.append (h1)
 
-	form = et.Element ('form')
+	form = et.SubElement (bo, 'form', method='get')
 	kwargs = {}
 	if feed_id != None:
 		kwargs['feed_id'] = feed_id
 	form.set ('action', web.url_for_view ('view_feed', **kwargs))
-	form.set ('method', 'get')
-	p = et.Element ('p')
-	b = et.Element ('button')
-	b.set ('name', 'show_all')
+	p = et.SubElement (form, 'p')
+	bu = et.SubElement (p, 'button', name='show_all')
 	if request.GET.get ('show_all', 'no') == 'no':
 		p.text = 'showing unread entries'
-		b.text = 'show all'
-		b.set ('value', 'yes')
+		bu.text = 'show all'
+		bu.set ('value', 'yes')
 	else:
 		p.text = 'showing all entries'
-		b.text = 'show unread'
-		b.set ('value', 'no')
-	p.append (b)
-	form.append (p)
-	bo.append (form)
+		bu.text = 'show unread'
+		bu.set ('value', 'no')
 
 	for entry, date in q:
-		div = et.Element ('div')
+		div = et.SubElement (bo, 'div')
 		div.set ('class', 'entry')
 		div.set ('style', 'border-left: 1px solid #ccc; padding-left: 0.5em;')
-		bo.append (div)
 
-		h1 = et.Element ('h2')
+		h1 = et.SubElement (div, 'h2')
 		if entry.link != None:
-			h1a = et.Element ('a')
+			h1a = et.SubElement (h1, 'a')
 			h1a.set ('href', entry.link)
 			h1a.text = entry.get_title ()
-			h1.append (h1a)
 		else:
 			h1.text = entry.get_title ()
-		div.append (h1)
 
-		p = et.Element ('p')
+		p = et.SubElement (div, 'p')
 		p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.get_title (), date.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)'))
 		if entry.author != None and entry.author != '':
 			p.text = '%s by %s' % (p.text, entry.author)
-		div.append (p)
 
 		#if entry.id == 1841: import pdb; pdb.set_trace ()
 		#if entry.id == 3209: import pdb; pdb.set_trace ()
@@ -124,9 +110,8 @@ def view_feed (request, feed_id = None):
 			raise Exception ('empty <html:body> element for entry #%i' % (entry.id))
 
 		# handle the body element's first text node
-		di = et.Element ('div')
+		di = et.SubElement (div, 'div')
 		di.text = elems.text
-		div.append (di)
 		# subsequent text nodes are considered a part of the contained elements
 
 		# strip XHTML namespace from elements
@@ -137,30 +122,24 @@ def view_feed (request, feed_id = None):
 		for elem in elems:
 			di.append (elem)
 	
-	bo.append (et.Element ('hr'))
+	et.SubElement (bo, 'hr')
 
-	fo = et.Element ('form')
-	fo.set ('method', 'post')
+	fo = et.SubElement (bo, 'form', method='post')
 	kwargs = {}
 	if feed_id != None:
 		kwargs['feed_id'] = feed_id
 	fo.set ('action', web.url_for_view ('mark_read', **kwargs))
-	bo.append (fo)
 
-	p = et.Element ('p')
+	p = et.SubElement (fo, 'p')
 	for e, d in q:
-		ids = et.Element ('input')
+		ids = et.SubElement (p, 'input')
 		ids.set ('name', 'ids')
 		ids.set ('type', 'hidden')
 		ids.set ('value', str (e.id))
-		p.append (ids)
 
-	sb = et.Element ('button')
+	sb = et.SubElement (p, 'button')
 	sb.set ('type', 'submit')
 	sb.text = 'Mark all read'
-	p.append (sb)
-
-	fo.append (p)
 
 	r = WSGIResponse ()
 	r.headers['content-type'] = 'application/xhtml+xml; charset=utf-8'
