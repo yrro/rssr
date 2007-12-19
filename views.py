@@ -10,6 +10,9 @@ import web
 from xml.dom import XHTML_NAMESPACE
 ET_XHTML_NAMESPACE = '{%s}' % (XHTML_NAMESPACE)
 
+def root (request):
+	raise HTTPFound (web.url_for_view ('view_feed'))
+
 def list_feeds (request):
 	s = db.Session ()
 

@@ -14,6 +14,7 @@ import db
 import views
 
 m = routes.Mapper (explicit = True)
+m.connect ('', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
 m.connect ('view',           controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
 m.connect ('view/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
 m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
