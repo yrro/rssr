@@ -34,8 +34,11 @@ def mark_read (request, feed_id = None):
 
 def view_feed (request, feed_id = None):
 	# TODO: TZ environment variable (if feasable)
-	tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
-	
+	if hasattr (pytz, 'tzfile'):
+		tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
+	else:
+		tz = pytz.timezone ('Europe/London')
+
 	ht = et.Element ('html', xmlns = XHTML_NAMESPACE)
 
 	he = et.SubElement (ht, 'head')
