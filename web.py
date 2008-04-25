@@ -18,7 +18,7 @@ def url_for_view (view_name, **kwargs):
 	'''Given a view name and (optional) parameters, return the URL to access that view.'''
 	url = routes.util.url_for (controller = view_name, **kwargs)
 	if url == None:
-		raise Exception ('No URL found for controller "%s" {%s}' % (controller, kwargs))
+		raise Exception ('No URL found for controller "%s" %s' % (view_name, kwargs))
 	return url
 
 def app (environ, start_response):
