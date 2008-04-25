@@ -1,11 +1,5 @@
 #!/usr/bin/python
 
-import cgitb
-import pdb
-import sys
-import traceback
-import urlparse
-
 from paste.httpexceptions import HTTPNotFound
 from paste.wsgiwrappers import WSGIRequest, WSGIResponse
 import routes
@@ -44,25 +38,6 @@ def app (environ, start_response):
 	assert (isinstance (result, WSGIResponse))
 	return result (environ, start_response)
 
-class cgitb_app:
-	def __init__ (self, app):
-		self.app = app
-	
-	def __call__ (self, environ, start_response):
-		try:
-			return self.app (environ, start_response)
-		except Exception, e:
-			traceback.print_exc (file = environ['wsgi.errors'])
-
-			pdb.post_mortem (sys.exc_info ()[2])
-
-			from cStringIO import StringIO
-			s = StringIO ()
-			cgitb.Hook (file = s).handle ()
-			s.seek (0)
-			start_response ('500 Internal Server Error', [('content-type', 'text/html')], sys.exc_info ())
-			return s
-
 if __name__ == '__main__':
 	# Ensure that the app acts as a valid WSGI application
 	#from wsgiref.validate import validator
@@ -71,9 +46,6 @@ if __name__ == '__main__':
 	# Handle Paste HTTP exceptions
 	from paste.httpexceptions import HTTPExceptionHandler
 	app = HTTPExceptionHandler (app)
-
-	# Catch exceptions, render a pretty stack trace to the response
-	#app = cgitb_app (app)
 
 	# Paste's version of the above
 	#from paste.exceptions.errormiddleware import ErrorMiddleware
