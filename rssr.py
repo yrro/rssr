@@ -3,6 +3,7 @@
 import datetime
 
 import feedparser
+from sqlalchemy import sql
 from twisted.internet import defer
 
 import config
@@ -18,50 +19,54 @@ def handle_error (failure, feed):
     log.err ('%s: %s' % (feed, msg))
 
     session = db.Session ()
-    feed = session.query (db.Feed).get (feed.id) # feed may still be owned by got_data's session
-    feed.error = failure.getErrorMessage ()
-    session.update (feed)
-    session.commit ()
+    try:
+        feed = session.query (db.Feed).get (feed.id) # feed may still be owned by got_data's session
+        feed.error = failure.getErrorMessage ()
+        session.update (feed)
+        session.commit ()
+    finally:
+        session.close ()
 
 def save_feed (parsed, feed):
     log.msg ('%s: saving %i entries...' % (feed, len (parsed.entries)))
  
     session = db.Session ()
-    feed.update_fields (parsed)
-    session.save_or_update (feed)
+    try:
+        feed.update_fields (parsed)
+        session.save_or_update (feed)
 
-    # maps entry GUIDs to feed's parsed entries
-    current_entries_parsed = dict ([(util.feedparser_entry_guid (e), e) for e in parsed['entries'] if util.feedparser_entry_guid (e) != None])
+        # maps entry GUIDs to feed's parsed entries
+        current_entries_parsed = dict ([(util.feedparser_entry_guid (e), e) for e in parsed['entries'] if util.feedparser_entry_guid (e) != None])
 
-    # remove obsolete entries -- those that are NOT still in the feed data, and
-    # that are older than a certain age
-    cutoff = datetime.datetime.utcnow () - datetime.timedelta (days = config.article_retention)
-    from sqlalchemy.sql import not_
-    obsolete_entries = feed.entries.filter (db.Entry.inserted < cutoff).filter (not_ (db.Entry.guid.in_ (current_entries_parsed.keys ())))
-    for oe in obsolete_entries:
-        log.msg ('deleting %s' % (oe))
-        session.delete (oe)
+        # remove obsolete entries -- those that are NOT still in the feed data, and
+        # that are older than a certain age
+        cutoff = datetime.datetime.utcnow () - datetime.timedelta (days = config.article_retention)
+        obsolete_entries = feed.entries.filter (db.Entry.inserted < cutoff).filter (sql.not_ (db.Entry.guid.in_ (current_entries_parsed.keys ())))
+        for oe in obsolete_entries:
+            log.msg ('deleting %s' % (oe))
+            session.delete (oe)
 
-    # update old entries -- those that we already saved in a previous run,
-    # but that might have updated properties. as entries are processed,
-    # they are removed from current_entries_parsed.
-    old_entries = feed.entries.filter (db.Entry.guid.in_ (current_entries_parsed.keys ()))
-    for oe in old_entries:
-        oe.update_fields (current_entries_parsed.pop (oe.guid))
-        session.update (oe)
+        # update old entries -- those that we already saved in a previous run,
+        # but that might have updated properties. as entries are processed,
+        # they are removed from current_entries_parsed.
+        old_entries = feed.entries.filter (db.Entry.guid.in_ (current_entries_parsed.keys ()))
+        for oe in old_entries:
+            oe.update_fields (current_entries_parsed.pop (oe.guid))
+            session.update (oe)
 
-    # insert new entries -- anything left in current_entries_parsed
-    for ne_parsed in current_entries_parsed.values ():
-        ne = db.Entry ()
-        ne.feed = feed
-        ne.read = False
-        ne.inserted = datetime.datetime.utcnow ()
-        ne.update_fields (ne_parsed)
-        log.msg ('new entry %s' % (ne))
-        feed.entries.append (ne)
-    session.update (feed)
-
-    session.commit ()
+        # insert new entries -- anything left in current_entries_parsed
+        for ne_parsed in current_entries_parsed.values ():
+            ne = db.Entry ()
+            ne.feed = feed
+            ne.read = False
+            ne.inserted = datetime.datetime.utcnow ()
+            ne.update_fields (ne_parsed)
+            log.msg ('new entry %s' % (ne))
+            feed.entries.append (ne)
+        session.update (feed)
+        session.commit ()
+    finally:
+        session.close ()
     log.msg ('...done')
 
 def parse_feed (x, data, feed):
@@ -99,40 +104,41 @@ pending_groups = 0
 
 def refresh_feeds ():
     session = db.Session ()
+    try:
+        feeds = session.query (db.Feed).order_by (sql.func.random ())
 
-    from sqlalchemy import sql
-    feeds = session.query (db.Feed).order_by (sql.func.random ())
+        global pending_groups
+        groups = [[] for f in xrange (config.deferred_groups)]
+        pending_groups = len (groups)
 
-    global pending_groups
-    groups = [[] for f in xrange (config.deferred_groups)]
-    pending_groups = len (groups)
+        for i, feed in enumerate (feeds):
+            session.expunge (feed)
+            groups[i % config.deferred_groups].append (feed)
 
-    for i, feed in enumerate (feeds):
-        session.expunge (feed)
-        groups[i % config.deferred_groups].append (feed)
+        for g in groups:
+            # This Deferred will call each callback as soon as it is added.
+            # <http://twistedmatrix.com/documents/current/api/twisted.internet.defer.html#succeed>
+            # The argument is passed to the first callback added.
+            d = defer.succeed (None)
+            for feed in g:
+                # download_feed returns a deferred, which causes d's callback
+                # chain to wait for the returned callback chain to be processed.
+                # <http://twistedmatrix.com/projects/core/documentation/howto/defer.html#auto11>.
+                d.addCallback (download_feed, feed)
+                #d.addErrback (handle_403) # but if we handle a 403, what do we return? whatever we do will go to parse_feed
 
-    for g in groups:
-        # This Deferred will call each callback as soon as it is added.
-        # <http://twistedmatrix.com/documents/current/api/twisted.internet.defer.html#succeed>
-        # The argument is passed to the first callback added.
-        d = defer.succeed (None)
-        for feed in g:
-            # download_feed returns a deferred, which causes d's callback
-            # chain to wait for the returned callback chain to be processed.
-            # <http://twistedmatrix.com/projects/core/documentation/howto/defer.html#auto11>.
-            d.addCallback (download_feed, feed)
-            #d.addErrback (handle_403) # but if we handle a 403, what do we return? whatever we do will go to parse_feed
+                d.addCallback (store_feed, feed)
 
-            d.addCallback (store_feed, feed)
+                # Finally, this errback traps any failures from this feed
+                # so that the deferred can continue to process the next
+                # feed.
+                d.addErrback (handle_error, feed)
 
-            # Finally, this errback traps any failures from this feed
-            # so that the deferred can continue to process the next
-            # feed.
-            d.addErrback (handle_error, feed)
-
-        # The last time group_done is called, it will return a Deferred
-        # that will cause feeds to be parsed and stored.
-        d.addCallback (group_done)
+            # The last time group_done is called, it will return a Deferred
+            # that will cause feeds to be parsed and stored.
+            d.addCallback (group_done)
+    finally:
+        session.close ()
 
 from twisted.python import log
 
