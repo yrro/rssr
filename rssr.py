@@ -36,7 +36,7 @@ def save_feed (parsed, feed):
         session.save_or_update (feed)
 
         # maps entry GUIDs to feed's parsed entries
-        current_entries_parsed = dict ([(util.feedparser_entry_guid (e), e) for e in parsed['entries'] if util.feedparser_entry_guid (e) != None])
+        current_entries_parsed = dict ((util.feedparser_entry_guid (e), e) for e in parsed['entries'])
 
         # remove obsolete entries -- those that are NOT still in the feed data, and
         # that are older than a certain age

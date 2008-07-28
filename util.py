@@ -43,15 +43,9 @@ def struct_time_to_datetime (time):
 def feedparser_entry_guid (entry_parsed):
     '''Some feeds lack a sensible guid. We'll just have to use other
     elements of the feed instead.'''
-    for a in ('id', 'link', 'title'):
-        v = entry_parsed.get (a)
-        if v != None:
-            return v
+    if entry_parsed.get ('id') != None:
+        return entry_parsed['id']
 
-    v = entry_parsed.get ('description')
-    if v != None:
-        return sha.new (v).hexdigest ()
-
-    return None
+    return unicode (sha.new (repr (dict (entry_parsed))).hexdigest ())
 
 # vim: softtabstop=4 expandtab
