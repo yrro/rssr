@@ -70,10 +70,21 @@ def view_feed (request, feed_id = None):
 		q = q.order_by (date_clause)[0:20]
 
 		h1 = et.SubElement (bo, 'h1')
+		h1.text = 'view entries'
+		p = et.SubElement (bo, 'p')
 		if feed_id != None:
-			h1.text = feed.title.as_text ()
+			p.text = 'from '
+			st = et.SubElement (p, 'strong')
+			st.text = feed.title.as_text ()
+			st.tail = ' '
+			a = et.SubElement (p, 'a')
+			a.text = 'view all feeds'
+			a.set ('href', web.url_for_view ('view_feed'))
 		else:
-			h1.text = 'all feeds'
+			p.text = 'from all feeds '
+			a = et.SubElement (p, 'a')
+			a.text = 'view a particular feed'
+			a.set ('href', web.url_for_view ('list_feeds'))
 
 		p = et.SubElement (bo, 'p')
 		a = et.SubElement (p, 'a')
