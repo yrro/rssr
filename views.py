@@ -3,6 +3,8 @@ from paste.httpexceptions import HTTPNotFound, HTTPFound
 from paste.wsgiwrappers import WSGIResponse
 import pytz
 from sqlalchemy import sql
+import urllib
+import urlparse
 
 import db
 import web
@@ -73,21 +75,21 @@ def view_feed (request, feed_id = None):
 		else:
 			h1.text = 'all feeds'
 
-		form = et.SubElement (bo, 'form', method='get')
+		p = et.SubElement (bo, 'p')
+		a = et.SubElement (p, 'a')
 		kwargs = {}
 		if feed_id != None:
 			kwargs['feed_id'] = feed_id
-		form.set ('action', web.url_for_view ('view_feed', **kwargs))
-		p = et.SubElement (form, 'p')
-		bu = et.SubElement (p, 'button', name='show_all')
+		url = list (urlparse.urlsplit (web.url_for_view ('view_feed', **kwargs)))
 		if request.GET.get ('show_all', 'no') == 'no':
-			p.text = 'showing unread entries'
-			bu.text = 'show all'
-			bu.set ('value', 'yes')
+			p.text = 'showing unread entries '
+			a.text = 'show all'
+			url[3] = urllib.urlencode ({'show_all': 'yes'})
 		else:
-			p.text = 'showing all entries'
-			bu.text = 'show unread'
-			bu.set ('value', 'no')
+			p.text = 'showing all entries '
+			a.text = 'show only unread'
+			url[3] = urllib.urlencode ({'show_all': 'no'})
+		a.set ('href', urlparse.urlunsplit (url))
 
 		for entry, date in q:
 			div = et.SubElement (bo, 'div')
