@@ -116,9 +116,13 @@ def view_feed (request, feed_id = None):
 				h1.text = entry.get_title ()
 
 			p = et.SubElement (div, 'p')
-			p.text = '(%i) Posted to %s on %s' % (entry.id, entry.feed.get_title (), date.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)'))
+			p.text = '(%i) posted to ' % (entry.id)
+			a = et.SubElement (p, 'a')
+			a.text = entry.feed.get_title ()
+			a.set ('href', web.url_for_view ('view_feed', feed_id = entry.feed.id))
+			a.tail = ' on %s' % (date.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)'))
 			if entry.author != None and entry.author != '':
-				p.text = '%s by %s' % (p.text, entry.author)
+				a.tail += ' by %s' % (entry.author)
 
 			#if entry.id == 1841: import pdb; pdb.set_trace ()
 			#if entry.id == 3209: import pdb; pdb.set_trace ()
