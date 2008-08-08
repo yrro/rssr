@@ -83,7 +83,7 @@ def view_feed (request, feed_id = None):
 		else:
 			p.text = 'from all feeds '
 			a = et.SubElement (p, 'a')
-			a.text = 'view a particular feed'
+			a.text = 'list'
 			a.set ('href', web.url_for_view ('list_feeds'))
 
 		p = et.SubElement (bo, 'p')
