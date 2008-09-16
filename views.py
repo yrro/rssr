@@ -130,7 +130,15 @@ def view_feed (request, feed_id = None):
 			def parse_unicode (document):
 				from cStringIO import StringIO
 				from elementtidy import TidyHTMLTreeBuilder
-				return et.parse (StringIO (body.encode ('utf-8')), TidyHTMLTreeBuilder.TreeBuilder (encoding = 'utf-8'))
+                                from xml.parsers.expat import ExpatError
+                                try:
+				    return et.parse (StringIO (body.encode ('utf-8')), TidyHTMLTreeBuilder.TreeBuilder (encoding = 'utf-8'))
+                                except ExpatError, e:
+                                    return et.parse (StringIO ('''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+                                        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+                                        <html xmlns="http://www.w3.org/1999/xhtml">
+                                            <body><em>Error parsing body</em></body>
+                                        </html>'''))
 			body_tree = parse_unicode (body)
 
 			elems = body_tree.find (ET_XHTML_NAMESPACE + 'body') # TODO: xpath
