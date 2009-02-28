@@ -1,4 +1,4 @@
-import elementtree.ElementTree as et
+import xml.etree.ElementTree as et
 from paste.httpexceptions import HTTPNotFound, HTTPFound
 from paste.wsgiwrappers import WSGIResponse
 import pytz
