@@ -26,3 +26,5 @@ for o in outlines:
 	f = db.Feed (o.getAttribute ('xmlUrl'))
 	s.save (f)
 s.commit ()
+
+# vim: noet sts=0

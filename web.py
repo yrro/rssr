@@ -68,3 +68,5 @@ if __name__ == '__main__':
 		s.serve_forever ()
 	except KeyboardInterrupt, e:
 		pass
+
+# vim: noet sts=0

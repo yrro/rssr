@@ -21,4 +21,4 @@ def getPage (url, contextFactory = None, *args, **kwargs):
         reactor.connectTCP (host, port, factory)
     return factory
 
-# vim: softtabstop=4 expandtab
+# vim: noet sts=4

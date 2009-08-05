@@ -48,4 +48,4 @@ def feedparser_entry_guid (entry_parsed):
 
     return unicode (sha.new (repr (dict (entry_parsed))).hexdigest ())
 
-# vim: softtabstop=4 expandtab
+# vim: sts=4 et

@@ -190,4 +190,4 @@ def view_feed (request, feed_id = None):
 	finally:
 		s.close ()
 
-
+# vim: noet sts=0

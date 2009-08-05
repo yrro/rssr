@@ -8,4 +8,4 @@ article_retention = 180 # days
 
 deferred_groups = 25
 
-# vim: softtabstop=4 expandtab
+# vim: sts=4 et

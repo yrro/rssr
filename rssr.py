@@ -153,4 +153,4 @@ if __name__ == '__main__':
     from twisted.internet import reactor
     reactor.run ()
 
-# vim: softtabstop=4 expandtab shiftwidth=4
+# vim: sts=4 et
