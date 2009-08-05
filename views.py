@@ -37,6 +37,13 @@ def list_broken_feeds (session, request):
 	t.text = 'rssr: broken feeds'
 
 	bo = et.SubElement (ht, 'body')
+	h1 = et.SubElement (bo, 'h1')
+	h1.text = 'broken feeds'
+	p = et.SubElement (bo, 'p')
+	a = et.SubElement (p, 'a')
+	a.text = '(view entries)'
+	a.set ('href', web.url_for_view ('view_feed'))
+
 	t = et.SubElement (bo, 'table')
 	tr = et.SubElement (t, 'tr')
 	th = et.SubElement (tr, 'th')
