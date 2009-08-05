@@ -45,6 +45,8 @@ def list_broken_feeds (session, request):
 	th = et.SubElement (tr, 'th')
 	th.text = 'error'
 	th = et.SubElement (tr, 'th')
+	th.text = 'since'
+	th = et.SubElement (tr, 'th')
 	th.text = 'entries'
 
 	# sqlalchemy won't do DISTINCT ON :(
@@ -67,6 +69,11 @@ def list_broken_feeds (session, request):
 		td.text = f.title.as_text ()
 		td = et.SubElement (tr, 'td')
 		td.text = f.error
+
+		td = et.SubElement (tr, 'td')
+		date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
+		since = f.entries.add_column (date_clause).filter (date_clause != None).order_by (date_clause.desc ()).limit (1).first ()
+		td.text = since[1].replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d\xc2\xa0%H:%M\xc2\xa0%Z\xc2\xa0(%z)').decode ('utf-8') if since else '?'
 
 		# XXX: sqlalchemy can't count the number of entries for each field!
 		# SELECT count(entries.id) FROM feeds LEFT OUTER JOIN entries ON feeds.id = entries.feed_id WHERE feeds.error IS NOT NULL GROUP BY feeds.id, feeds.error;
