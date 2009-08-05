@@ -64,8 +64,9 @@ def view_feed (session, request, feed_id = None):
 
 	h1 = et.SubElement (bo, 'h1')
 	h1.text = 'view entries'
-	p = et.SubElement (bo, 'p')
+
 	if feed_id != None:
+		p = et.SubElement (bo, 'p')
 		p.text = 'from '
 		st = et.SubElement (p, 'strong')
 		st.text = feed.title.as_text ()
@@ -74,10 +75,17 @@ def view_feed (session, request, feed_id = None):
 		a.text = 'view all feeds'
 		a.set ('href', web.url_for_view ('view_feed'))
 	else:
+		p = et.SubElement (bo, 'p')
 		p.text = 'from all feeds '
 		a = et.SubElement (p, 'a')
 		a.text = 'list'
 		a.set ('href', web.url_for_view ('list_feeds'))
+
+		if session.query (db.Feed).filter (db.Feed.error != None).count () > 0:
+			a.tail = ' '
+			a = et.SubElement (p, 'a')
+			a.text = '(list broken)'
+			a.set ('href', 'blah')
 
 	p = et.SubElement (bo, 'p')
 	a = et.SubElement (p, 'a')
