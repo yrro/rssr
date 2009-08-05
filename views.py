@@ -44,10 +44,18 @@ def list_broken_feeds (session, request):
 	th.set ('colspan', '2')
 	th = et.SubElement (tr, 'th')
 	th.text = 'error'
-	th = et.SubElement (tr, 'th')
-	th.text = 'last'
 
-	for f in session.query (db.Feed).filter (db.Feed.error != None).order_by (db.Feed.refreshed):
+	# sqlalchemy won't do DISTINCT ON :(
+	# SELECT distinct on (feeds.id) feeds.id, feeds.error, coalesce(entries.updated, entries.published, entries.created, entries.inserted) AS coalesce_1
+	# FROM feeds LEFT OUTER JOIN entries ON feeds.id = entries.feed_id
+	# WHERE feeds.error IS NOT NULL ORDER BY feeds.id, coalesce_1 desc
+	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
+	#r = WSGIResponse ()
+	#r.headers['content-type'] = 'text/plain'
+	#print >> r, session.query (db.Feed).outerjoin ('entries').filter (db.Feed.error != None).add_column (date_clause).order_by (date_clause.desc ()).distinct (db.Feed.id)
+	#return r
+
+	for f in session.query (db.Feed).filter (db.Feed.error != None):
 		tr = et.SubElement (t, 'tr')
 		td = et.SubElement (tr, 'td')
 		a = et.SubElement (td, 'a')
@@ -57,8 +65,6 @@ def list_broken_feeds (session, request):
 		td.text = f.title.as_text ()
 		td = et.SubElement (tr, 'td')
 		td.text = f.error
-		td = et.SubElement (tr, 'td')
-		td.text = f.refreshed.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)') if not f.refreshed is None else '?'
 
 	r = WSGIResponse ()
 	r.headers['content-type'] = 'application/xhtml+xml; charset=utf-8'
