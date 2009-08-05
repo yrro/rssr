@@ -44,18 +44,20 @@ def list_broken_feeds (session, request):
 	th.set ('colspan', '2')
 	th = et.SubElement (tr, 'th')
 	th.text = 'error'
+	th = et.SubElement (tr, 'th')
+	th.text = 'entries'
 
 	# sqlalchemy won't do DISTINCT ON :(
 	# SELECT distinct on (feeds.id) feeds.id, feeds.error, coalesce(entries.updated, entries.published, entries.created, entries.inserted) AS coalesce_1
 	# FROM feeds LEFT OUTER JOIN entries ON feeds.id = entries.feed_id
 	# WHERE feeds.error IS NOT NULL ORDER BY feeds.id, coalesce_1 desc
-	date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
+	#date_clause = sql.func.coalesce (db.Entry.updated, db.Entry.published, db.Entry.created, db.Entry.inserted)
 	#r = WSGIResponse ()
 	#r.headers['content-type'] = 'text/plain'
 	#print >> r, session.query (db.Feed).outerjoin ('entries').filter (db.Feed.error != None).add_column (date_clause).order_by (date_clause.desc ()).distinct (db.Feed.id)
 	#return r
 
-	for f in session.query (db.Feed).filter (db.Feed.error != None):
+	for f in session.query (db.Feed).filter (db.Feed.error != None).outerjoin ('entries'):
 		tr = et.SubElement (t, 'tr')
 		td = et.SubElement (tr, 'td')
 		a = et.SubElement (td, 'a')
@@ -65,6 +67,17 @@ def list_broken_feeds (session, request):
 		td.text = f.title.as_text ()
 		td = et.SubElement (tr, 'td')
 		td.text = f.error
+
+		# XXX: sqlalchemy can't count the number of entries for each field!
+		# SELECT count(entries.id) FROM feeds LEFT OUTER JOIN entries ON feeds.id = entries.feed_id WHERE feeds.error IS NOT NULL GROUP BY feeds.id, feeds.error;
+		e = et.SubElement (tr, 'td')
+		c = f.entries.count ()
+		if c > 0:
+			e = et.SubElement (e, 'a')
+			url = list (urlparse.urlsplit (web.url_for_view ('view_feed', feed_id = f.id)))
+			url[3] = urllib.urlencode ({'show_all': 'yes'})
+			e.set ('href', urlparse.urlunsplit (url))
+		e.text = str (c)
 
 	r = WSGIResponse ()
 	r.headers['content-type'] = 'application/xhtml+xml; charset=utf-8'
