@@ -14,6 +14,7 @@ m.connect ('view/mark_read', controller = 'mark_read', conditions = {'method': (
 m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
 m.connect ('view/:feed_id/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
 m.connect ('feeds', controller = 'list_feeds', conditions = {'method': ('GET', 'HEAD')})
+m.connect ('feeds/broken', controller = 'list_broken_feeds', conditions = {'method': ('GET', 'HEAD')})
 
 def url_for_view (view_name, **kwargs):
 	'''Given a view name and (optional) parameters, return the URL to access that view.'''

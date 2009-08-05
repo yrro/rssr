@@ -12,6 +12,13 @@ import web
 from xml.dom import XHTML_NAMESPACE
 ET_XHTML_NAMESPACE = '{%s}' % (XHTML_NAMESPACE)
 
+# TODO: TZ environment variable (if feasable)
+try:
+	tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
+except:
+	tz = pytz.utc
+
+
 def root (request):
 	raise HTTPFound (web.url_for_view ('view_feed'))
 
@@ -20,6 +27,47 @@ def list_feeds (session, request):
 	res = WSGIResponse ()
 	print >> res, u'unicode \u1234 text!'
 	return res
+
+@db.with_session
+def list_broken_feeds (session, request):
+	ht = et.Element ('html', xmlns = XHTML_NAMESPACE)
+
+	he = et.SubElement (ht, 'head')
+	t = et.SubElement (he, 'title')
+	t.text = 'rssr: broken feeds'
+
+	bo = et.SubElement (ht, 'body')
+	t = et.SubElement (bo, 'table')
+	tr = et.SubElement (t, 'tr')
+	th = et.SubElement (tr, 'th')
+	th.text = 'feed'
+	th.set ('colspan', '2')
+	th = et.SubElement (tr, 'th')
+	th.text = 'error'
+	th = et.SubElement (tr, 'th')
+	th.text = 'last'
+
+	for f in session.query (db.Feed).filter (db.Feed.error != None).order_by (db.Feed.refreshed):
+		tr = et.SubElement (t, 'tr')
+		td = et.SubElement (tr, 'td')
+		a = et.SubElement (td, 'a')
+		a.text = str (f.id)
+		a.set ('href', f.href)
+		td = et.SubElement (tr, 'td')
+		td.text = f.title.as_text ()
+		td = et.SubElement (tr, 'td')
+		td.text = f.error
+		td = et.SubElement (tr, 'td')
+		td.text = f.refreshed.replace (tzinfo = pytz.utc).astimezone (tz).strftime ('%Y-%m-%d %H:%M %Z (%z)') if not f.refreshed is None else '?'
+
+	r = WSGIResponse ()
+	r.headers['content-type'] = 'application/xhtml+xml; charset=utf-8'
+	print >> r, '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">'
+
+	t = et.ElementTree (ht)
+	t.write (r, 'utf-8')
+
+	return r
 
 @db.with_session
 def mark_read (session, request, feed_id = None):
@@ -36,18 +84,12 @@ def mark_read (session, request, feed_id = None):
 
 @db.with_session
 def view_feed (session, request, feed_id = None):
-	# TODO: TZ environment variable (if feasable)
-	try:
-		tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
-	except:
-		tz = pytz.utc
-
 	ht = et.Element ('html', xmlns = XHTML_NAMESPACE)
 
 	he = et.SubElement (ht, 'head')
 
 	t = et.SubElement (he, 'title')
-	t.text = 'rssr'
+	t.text = 'rssr: view entries'
 
 	bo = et.SubElement (ht, 'body')
 
@@ -86,7 +128,7 @@ def view_feed (session, request, feed_id = None):
 		a.tail = ' '
 		a = et.SubElement (p, 'a')
 		a.text = '(list broken)'
-		a.set ('href', 'blah')
+		a.set ('href', web.url_for_view ('list_broken_feeds'))
 
 	p = et.SubElement (bo, 'p')
 	a = et.SubElement (p, 'a')
