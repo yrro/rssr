@@ -10,6 +10,15 @@ engine = create_engine (config.db_engine)
 from sqlalchemy.orm import sessionmaker
 Session = sessionmaker (bind = engine, transactional = True, autoflush = True)
 
+def with_session (f):
+    def _wrap (*args, **kwargs):
+        s = Session ()
+        try:
+            return f (s, *args, **kwargs)
+        finally:
+            s.close ()
+    return _wrap
+
 from sqlalchemy import MetaData
 metadata = MetaData ()
 
