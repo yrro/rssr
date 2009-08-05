@@ -37,10 +37,10 @@ def mark_read (session, request, feed_id = None):
 @db.with_session
 def view_feed (session, request, feed_id = None):
 	# TODO: TZ environment variable (if feasable)
-	if hasattr (pytz, 'tzfile'):
+	try:
 		tz = pytz.tzfile.build_tzinfo ('local', open ('/etc/localtime', 'rb'))
-	else:
-		tz = pytz.timezone ('Europe/London')
+	except:
+		tz = pytz.utc
 
 	ht = et.Element ('html', xmlns = XHTML_NAMESPACE)
 
