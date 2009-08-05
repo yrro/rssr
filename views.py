@@ -72,13 +72,13 @@ def view_feed (session, request, feed_id = None):
 		st.text = feed.title.as_text ()
 		st.tail = ' '
 		a = et.SubElement (p, 'a')
-		a.text = 'view all feeds'
+		a.text = '(view from all)'
 		a.set ('href', web.url_for_view ('view_feed'))
 	else:
 		p = et.SubElement (bo, 'p')
 		p.text = 'from all feeds '
 		a = et.SubElement (p, 'a')
-		a.text = 'list'
+		a.text = '(list all)'
 		a.set ('href', web.url_for_view ('list_feeds'))
 
 		if session.query (db.Feed).filter (db.Feed.error != None).count () > 0:
@@ -95,11 +95,11 @@ def view_feed (session, request, feed_id = None):
 	url = list (urlparse.urlsplit (web.url_for_view ('view_feed', **kwargs)))
 	if request.GET.get ('show_all', 'no') == 'no':
 		p.text = 'showing unread entries '
-		a.text = 'show all'
+		a.text = '(show all)'
 		url[3] = urllib.urlencode ({'show_all': 'yes'})
 	else:
 		p.text = 'showing all entries '
-		a.text = 'show only unread'
+		a.text = '(show only unread)'
 		url[3] = urllib.urlencode ({'show_all': 'no'})
 	a.set ('href', urlparse.urlunsplit (url))
 
