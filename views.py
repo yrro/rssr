@@ -72,8 +72,11 @@ def list_broken_feeds (session, request):
 		a = et.SubElement (td, 'a')
 		a.text = str (f.id)
 		a.set ('href', f.href)
-		td = et.SubElement (tr, 'td')
-		td.text = f.title.as_text ()
+		e = et.SubElement (tr, 'td')
+		if f.link:
+		    e = et.SubElement (e, 'a')
+		    e.set ('href', f.link)
+		e.text = f.title.as_text ()
 		td = et.SubElement (tr, 'td')
 		td.text = f.error
 
