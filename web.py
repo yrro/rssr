@@ -8,13 +8,13 @@ import db
 import views
 
 m = routes.Mapper (explicit = True)
-m.connect ('', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
-m.connect ('view',           controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
-m.connect ('view/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
-m.connect ('view/:feed_id', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
-m.connect ('view/:feed_id/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
-m.connect ('feeds', controller = 'list_feeds', conditions = {'method': ('GET', 'HEAD')})
-m.connect ('feeds/broken', controller = 'list_broken_feeds', conditions = {'method': ('GET', 'HEAD')})
+m.connect (None, '/', controller = 'root', conditions = {'method': ('GET', 'HEAD')})
+m.connect (None, '/view',           controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
+m.connect (None, '/view/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
+m.connect (None, '/view/{feed_id}', controller = 'view_feed', conditions = {'method': ('GET', 'HEAD')})
+m.connect (None, '/view/{feed_id}/mark_read', controller = 'mark_read', conditions = {'method': ('POST',)})
+m.connect (None, '/feeds', controller = 'list_feeds', conditions = {'method': ('GET', 'HEAD')})
+m.connect (None, '/feeds/broken', controller = 'list_broken_feeds', conditions = {'method': ('GET', 'HEAD')})
 
 def url_for_view (view_name, **kwargs):
 	'''Given a view name and (optional) parameters, return the URL to access that view.'''
