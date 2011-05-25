@@ -22,7 +22,7 @@ def handle_error (failure, feed):
     try:
         feed = session.query (db.Feed).get (feed.id) # feed may still be owned by got_data's session
         feed.error = failure.getErrorMessage ()
-        session.update (feed)
+        session.add (feed)
         session.commit ()
     finally:
         session.close ()
@@ -33,7 +33,7 @@ def save_feed (parsed, feed):
     session = db.Session ()
     try:
         feed.update_fields (parsed)
-        session.save_or_update (feed)
+        session.add (feed)
 
         # maps entry GUIDs to feed's parsed entries
         current_entries_parsed = dict ((util.feedparser_entry_guid (e), e) for e in parsed['entries'])
@@ -52,7 +52,7 @@ def save_feed (parsed, feed):
         old_entries = feed.entries.filter (db.Entry.guid.in_ (current_entries_parsed.keys ()))
         for oe in old_entries:
             oe.update_fields (current_entries_parsed.pop (oe.guid))
-            session.update (oe)
+            session.add (oe)
 
         # insert new entries -- anything left in current_entries_parsed
         for ne_parsed in current_entries_parsed.values ():
@@ -63,7 +63,7 @@ def save_feed (parsed, feed):
             ne.update_fields (ne_parsed)
             log.msg ('new entry %s' % (ne))
             feed.entries.append (ne)
-        session.update (feed)
+        session.add (feed)
         session.commit ()
     finally:
         session.close ()
@@ -97,7 +97,7 @@ def store_feed (data, feed):
 def download_feed (x, feed):
     log.msg ('%s: downloading' % (feed))
     from twisted.web import client
-    return client.getPage (feed.href, timeout = config.feed_fetch_timeout, agent = 'rssr')
+    return client.getPage (feed.href.encode ('ascii'), timeout = config.feed_fetch_timeout, agent = 'rssr')
 
 downloaded_feeds = []
 pending_groups = 0

@@ -24,7 +24,7 @@ outlines = [n for n in body.childNodes if n.nodeType == xml.dom.minidom.Node.ELE
 s = db.Session ()
 for o in outlines:
 	f = db.Feed (o.getAttribute ('xmlUrl'))
-	s.save (f)
+	s.add (f)
 s.commit ()
 
 # vim: noet sts=0

@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 engine = create_engine (config.db_engine)
 
 from sqlalchemy.orm import sessionmaker
-Session = sessionmaker (bind = engine, transactional = True, autoflush = True)
+Session = sessionmaker (bind = engine, autocommit = False, autoflush = True)
 
 def with_session (f):
     def _wrap (*args, **kwargs):

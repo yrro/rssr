@@ -1,4 +1,4 @@
-db_engine = 'postgres://:5433/rssr'
+db_engine = 'postgresql:///rssr'
 
 refresh_interval = 60 * 60 # seconds
 

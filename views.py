@@ -110,7 +110,7 @@ def mark_read (session, request, feed_id = None):
 	entries = session.query (db.Entry).filter (db.Entry.id.in_ (request.POST.getall ('ids')))
 	for entry in entries:
 		entry.read = True
-		session.update (entry)
+		session.add (entry)
 	session.commit ()
 
 	kwargs = {}
