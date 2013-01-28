@@ -24,8 +24,22 @@ def root (request):
 
 @db.with_session
 def list_feeds (session, request):
-	res = WSGIResponse ()
-	print >> res, u'unicode \u1234 text!'
+	op = et.Element ('opml')
+	op.attrib['version'] = '1.0'
+	
+	et.SubElement (op, 'head')
+
+	b = et.SubElement (op, 'body')
+
+	for feed in session.query (db.Feed):
+		o = et.SubElement (b, 'outline')
+		#if feed.title.as_text ():
+		#	o.attrib['text'] = feed.title.as_text ()
+		o.attrib['xmlUrl'] = feed.href
+	
+	res = WSGIResponse ('', 'text/xml')
+	t = et.ElementTree (op)
+	t.write (res, 'utf-8')
 	return res
 
 @db.with_session
